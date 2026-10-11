@@ -479,3 +479,17 @@ Admin commands need the bot to be a group admin to delete or remove. Admins and 
 |---|---|
 | `.download <url>` | Alias of `.dl` |
 | `.pinterest` / `.threads` / `.reddit` / `.twitter <url>` | Download from those platforms |
+
+## Music, photo and Telegram plugins (v2.3.0)
+
+| Command | Usage |
+|---|---|
+| `.spotify` | `.spotify <song or artist>`: cover card and MP3 |
+| `.alexa` | `.alexa <song name>`: play a song as MP3 |
+| `.remini` | Reply to a photo with `.remini`, or `.remini <image link>` |
+| `.tg` | `.tg https://t.me/addstickers/<pack> [count]`: Telegram stickers to WhatsApp (alias `.tgs`) |
+| `.reactall` | Owner: `on\|off`, `scope pm\|group\|all`, `skip` / `only <number\|here>`, `emoji ...`, `status` |
+| `.anim` | Owner: `.anim`, `.anim <name>`, `.anim stop`. Names: moon, tmoon, stupid, fire, hypno, ding, solarsystem, fleaveme, snake, quickheal, macoc, hand, theart, hart, loading, jio |
+| `.tdl` | Owner: `.tdl <t.me link>`, `.tdl <words>`, `.tdl dd 1,2`, `.tdl export`, `.tdl login`, `.tdl update` |
+
+Details: [v2.3.0 notes](./changelog/v2.3.0.md).
