@@ -20,7 +20,7 @@ function safeReadJson(filePath, fallback) {
 
 export async function settingsCommand(sock, chat, msg) {
   const ghostState = safeReadJson(inState('ghost.json'), { on: true, edit: true });
-  const lurkState = safeReadJson(inState('lurk.json'), { on: true, react: true, emoji: '❤️', download: true });
+  const lurkState = safeReadJson(inState('lurk.json'), { on: false, react: false, emoji: '❤️', download: true });
   const peekState = safeReadJson(inState('peek.json'), { auto: false, dest: 'owner', watchQuoted: true });
   const presenceState = safeReadJson(inState('presence.json'), { alwaysOnline: false, autoTyping: false, autoRecording: false, readReceipts: false });
   const protectionState = safeReadJson(inState('protection.json'), { antilink: false, antispam: false, antisticker: false });
@@ -39,8 +39,8 @@ export async function settingsCommand(sock, chat, msg) {
   text += `• Antiedit: *${ghostState.edit !== false ? 'ON' : 'OFF'}*\n\n`;
 
   text += `🌒 *Lurk Mode*\n`;
-  text += `• Auto-View: *${lurkState.on !== false ? 'ON' : 'OFF'}*\n`;
-  text += `• Auto-React: *${lurkState.react !== false ? 'ON' : 'OFF'}* (${lurkState.emoji || '❤️'})\n`;
+  text += `• Auto-View: *${lurkState.on === true ? 'ON' : 'OFF'}*\n`;
+  text += `• Auto-React: *${lurkState.react === true ? 'ON' : 'OFF'}* (${lurkState.emoji || '❤️'})\n`;
   text += `• Download Statuses: *${lurkState.download !== false ? 'ON' : 'OFF'}*\n\n`;
 
   text += `👁️ *Peek Mode*\n`;

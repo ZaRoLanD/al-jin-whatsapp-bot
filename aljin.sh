@@ -90,7 +90,7 @@ while :; do
   [ "$code" -eq 0 ] && { say "Stopped."; break; }
   if [ $(( $(date +%s) - START )) -lt 40 ]; then FAILS=$((FAILS+1)); else FAILS=0; fi
   if [ "$FAILS" -ge 3 ]; then
-    say "Stopped: the bot failed 3 times in a row. Read the error above, fix it, then run: bash aljin.sh"
+    say "Stopped: the bot failed 3 times in a row. Read the error above, then run: bash aljin.sh. Need help? WhatsApp @insaf.pk (docs/support.md)"
     exit 1
   fi
   say "Bot exited (code $code) — restarting in 5 s…"; sleep 5

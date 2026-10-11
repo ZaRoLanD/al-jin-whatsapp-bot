@@ -1,5 +1,7 @@
 # Troubleshooting
 
+> **Still stuck?** Message **@insaf.pk** on WhatsApp with a screenshot of the error. See [Support](./support.md).
+
 ## "Waiting for this message. This may take a while."
 
 **Symptom:** Recipients (or your own phone) see this placeholder instead of the bot's message, sometimes forever.

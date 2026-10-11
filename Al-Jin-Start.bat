@@ -54,6 +54,7 @@ if errorlevel 1 (
     echo.
     echo [Al-Jin] Stopped: the bot failed 3 times in a row. Read the error above, fix it, then run this file again.
     echo          If it says npm or download failed, check your internet and try again.
+    echo          Need help? WhatsApp @insaf.pk
     pause
     exit /b 1
   )

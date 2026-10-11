@@ -6,8 +6,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import PQueue from 'p-queue';
-import bwipjs from 'bwip-js';
-import { createWorker } from 'tesseract.js';
 import { getMediaFromMsg } from './media-tools.js';
 import { ffmpegPath } from '../lib/ffmpeg-resolver.js';
 import { chunkText } from '../lib/net.js';
@@ -104,6 +102,7 @@ export async function ocrCommand(sock, chat, msg, args) {
     if (!text) {
       const lang = userLang || 'eng';
       const recognizedText = await ocrQueue.add(async () => {
+        const { createWorker } = await import('tesseract.js');
         const worker = await createWorker(lang);
         try {
           const ret = await worker.recognize(media.buffer);
@@ -155,6 +154,7 @@ export async function barcodeCommand(sock, chat, msg, args) {
       text = args.slice(1).join(' ');
     }
 
+    const bwipjs = (await import('bwip-js')).default;
     const pngBuffer = await bwipjs.toBuffer({
       bcid: type,
       text: text,
