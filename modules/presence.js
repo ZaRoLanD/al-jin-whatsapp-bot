@@ -36,19 +36,24 @@ function write(o) {
 // ─────────────────────────────────────────────
 let heartbeatTimer = null;
 
+// Stealth by default: the account shows as offline (no "online" / last seen
+// activity from the bot) unless the owner turns on `.presence online on`.
+async function applyPresence(sock) {
+    try {
+        const s = read();
+        await sock.sendPresenceUpdate(s.alwaysOnline ? 'available' : 'unavailable');
+    } catch (e) {
+        if (DEBUG) console.log('[presence] heartbeat error:', e.message);
+    }
+}
+
 export function startPresenceHeartbeat(sock) {
     if (heartbeatTimer) clearInterval(heartbeatTimer);
 
-    heartbeatTimer = setInterval(async () => {
-        try {
-            const s = read();
-            if (s.alwaysOnline) {
-                await sock.sendPresenceUpdate('available');
-            }
-        } catch (e) {
-            if (DEBUG) console.log('[presence] heartbeat error:', e.message);
-        }
-    }, 30_000);
+    // Go quiet right after connecting (WhatsApp marks a fresh link as active), then keep it that way.
+    setTimeout(() => { applyPresence(sock); }, 1500);
+    setTimeout(() => { applyPresence(sock); }, 8000);
+    heartbeatTimer = setInterval(() => { applyPresence(sock); }, 25_000);
 
     // Start (or resume) the stalk tracker on every connect so its presence
     // subscriptions are always re-created after a restart or reconnect.

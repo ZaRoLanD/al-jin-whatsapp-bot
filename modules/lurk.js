@@ -18,26 +18,35 @@ const DEBUG = process.env.WRAITH_DEBUG === '1';
 //  State
 // ─────────────────────────────────────────────
 fs.mkdirSync(path.dirname(STATE), { recursive: true });
-if (!fs.existsSync(STATE)) {
-    fs.writeFileSync(STATE, JSON.stringify({
-        on: true,
-        react: true,
-        emoji: '❤️',
-        download: true
-    }));
-}
+// Stealth by default: statuses are NOT marked as seen and NOT reacted to.
+// (Silent status saving stays on - it sends no "seen" signal.)
+// `v: 2` marks the stealth defaults; older state files are switched once.
+try {
+    let raw = null;
+    try { raw = JSON.parse(fs.readFileSync(STATE, 'utf-8')); } catch {}
+    if (!raw || raw.v !== 2) {
+        fs.writeFileSync(STATE, JSON.stringify({
+            on: false,
+            react: false,
+            emoji: raw?.emoji || '❤️',
+            download: raw ? raw.download !== false : true,
+            v: 2
+        }, null, 2));
+    }
+} catch {}
 
 function read() {
     try {
         const raw = JSON.parse(fs.readFileSync(STATE, 'utf-8'));
         return {
-            on: raw.on !== false,
-            react: raw.react !== false,
+            on: raw.on === true,
+            react: raw.react === true,
             emoji: raw.emoji || '❤️',
-            download: raw.download !== false
+            download: raw.download !== false,
+            v: 2
         };
     } catch {
-        return { on: true, react: true, emoji: '❤️', download: true };
+        return { on: false, react: false, emoji: '❤️', download: true, v: 2 };
     }
 }
 
