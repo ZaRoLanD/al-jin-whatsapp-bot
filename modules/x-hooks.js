@@ -9,6 +9,7 @@
 //  member hook  : antifake · "who left" log
 // ─────────────────────────────────────────────
 import { guardMessage, enforce } from './x-guard.js';
+import { globalReact } from './x-react.js';
 import { migrateAction } from '../lib/guard-core.js';
 import { store, isGroup, senderIds, isOwnerMsg, prefix, isSenderAdmin, isBotAdmin, tag, duration, contextOf, unwrap, pick } from '../lib/x.js';
 
@@ -75,6 +76,9 @@ export async function onMessage(sock, chat, msg, text) {
     if (!msg?.message || chat === 'status@broadcast') return false;
     const fromMe = !!msg.key.fromMe;
     const g = globalCfg().data;
+
+    // owner-controlled auto-react for every chat (off by default; never blocks the message)
+    globalReact(sock, chat, msg, text).catch(() => {});
     const ids = senderIds(msg);
 
     // bot-level ban → ignore commands only (chat stays readable)

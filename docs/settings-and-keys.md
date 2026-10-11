@@ -40,3 +40,14 @@ Commands that ask you to choose something (movie results, book lists, menus) can
 - `.replymode text` — numbered list, reply with the number (default, works everywhere)
 - `.replymode poll` — a poll; every ticked option runs and the poll is deleted when its time is up
 - `.replymode buttons` — native WhatsApp buttons (some clients show "Waiting for this message")
+
+## Plugin settings (v2.3.0)
+
+| Key | Used by | Needed? |
+|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | `.tg` | Yes, free from @BotFather |
+| `PRINCE_API_KEY` | `.remini` | No (shared key built in, offline enhancer as fallback) |
+| `TDL_CHATS` | `.tdl` search | Only for search: chat ids, comma separated |
+| `TDL_PATH` | `.tdl` | No: only if `tdl` is installed somewhere unusual |
+
+Set any of them from WhatsApp with `.setvar KEY value`, or put them in `keys.env`.

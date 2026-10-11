@@ -129,6 +129,15 @@ const EFFECT_ROWS = [
     ...EFFECT_NAMES.map((n) => [n, `${EFFECTS[n].icon} ${n[0].toUpperCase()}${n.slice(1)}`, `${EFFECTS[n].desc} Works on voice notes, audio and video (audio is returned).`, [`Reply to audio/video: .${n}`]]),
 ];
 
+const PLUGINS = [
+    ['spotify', '🎧 Spotify Song', 'Searches a song and sends the cover card plus the MP3. Falls back to a second API, then YouTube.', ['.spotify <song or artist>']],
+    ['alexa', '🎵 Alexa Play', 'Plays a song from YouTube music as an MP3 with a cover card. Falls back to a second API, then .play.', ['.alexa <song name>']],
+    ['remini', '✨ Photo Enhancer', 'Sharpens and enlarges a photo. Online AI first, built-in enhancer if it is down. Alias: enhance.', ['Reply to a photo: .remini', '.remini <image link>']],
+    ['tg', '🧩 Telegram Stickers', 'Copies a Telegram sticker pack into WhatsApp stickers (needs a free bot token). Aliases: tgs, stickerpack.', ['.tg https://t.me/addstickers/<pack> [count]']],
+    ['reactall', '😀 Auto-React Everywhere', 'Reacts to messages in every chat. Off by default. Scope, skip/only lists and custom emoji. Aliases: autoreactall, globalreact.', ['.reactall on|off', '.reactall scope pm|group|all', '.reactall skip|only <number|here>', '.reactall emoji 😀 🔥'], true],
+    ['anim', '🎞 Animations', 'Edit-in-place animations: moon, tmoon, stupid, fire, hypno, ding, solarsystem, fleaveme, snake, quickheal, macoc, hand, theart, hart, loading, jio. Alias: animations.', ['.anim', '.anim <name>', '.anim stop'], true],
+    ['tdl', '📥 Telegram Downloader', 'Downloads files from Telegram links or from your exported chats and sends them here. Uses the open-source tdl program.', ['.tdl <t.me link>', '.tdl <words>', '.tdl dd 1,2', '.tdl export | login | update'], true],
+];
 const SECTIONS = [
     { id: 'xprotect', icon: '🛡️', title: 'GROUP PROTECTION+', rows: GROUP_PROTECT, adminHint: true },
     { id: 'xgroup', icon: '👥', title: 'GROUP TOOLS+', rows: GROUP_TOOLS },
@@ -138,6 +147,7 @@ const SECTIONS = [
     { id: 'xweb', icon: '🌐', title: 'WEB LOOKUPS', rows: WEB },
     { id: 'xmedia', icon: '🎞️', title: 'MEDIA STUDIO', rows: MEDIA },
     { id: 'xeffects', icon: '🎛️', title: 'VOICE EFFECTS', rows: EFFECT_ROWS },
+    { id: 'xplugins', icon: '🎶', title: 'MUSIC & PLUGINS', rows: PLUGINS },
 ];
 
 /** Entries for modules/details.js */
@@ -152,6 +162,9 @@ const ALIASES = {
     steal: 'take', scrop: 'stickercrop', grayscale: 'greyscale', bw: 'greyscale', topdf: 'pdf',
     subtitles: 'subtitle', subs: 'subtitle', sub: 'subtitle', addsub: 'subtitle',
     transcribe: 'trb', transcript: 'trb', totext: 'trb', chatbot: 'bot',
+    enhance: 'remini', tgs: 'tg', stickerpack: 'tg', autoreactall: 'reactall', globalreact: 'reactall', animations: 'anim',
+    moon: 'anim', tmoon: 'anim', stupid: 'anim', fire: 'anim', hypno: 'anim', ding: 'anim', solarsystem: 'anim', fleaveme: 'anim', snake: 'anim',
+    quickheal: 'anim', macoc: 'anim', hand: 'anim', theart: 'anim', hart: 'anim', loading: 'anim', jio: 'anim', scan: 'anim', boot: 'anim', signal: 'anim',
     movies: 'movie', moviedl: 'movie', minfo: 'movieinfo', tvseries: 'series', seriesdl: 'series', cont: 'continue',
 };
 for (const [a, v] of Object.entries(ALIASES)) X_DETAILS[a] = X_DETAILS[v];

@@ -24,6 +24,12 @@ const LOADERS = {
     audio: () => import('./x-audio.js'),
     chatbot: () => import('./x-chatbot.js'),
     movie: () => import('./x-movie.js'),
+    music: () => import('./x-music.js'),
+    remini: () => import('./x-remini.js'),
+    tgsticker: () => import('./x-tgsticker.js'),
+    react: () => import('./x-react.js'),
+    anim: () => import('./x-anim.js'),
+    tdl: () => import('./x-tdl.js'),
 };
 
 // [verb, module, export, perm, ...aliases]
@@ -157,6 +163,25 @@ const TABLE = [
     ['fast', 'effects', 'fast', 'all'],
     ['tremolo', 'effects', 'tremolo', 'all'],
     ['distort', 'effects', 'distort', 'all'],
+    // music (own API -> second API -> built-in YouTube)
+    ['spotify', 'music', 'spotify', 'all'],
+    ['alexa', 'music', 'alexa', 'all'],
+    // photo enhancer (online AI -> built-in ffmpeg)
+    ['remini', 'remini', 'remini', 'all', 'enhance'],
+    // Telegram sticker packs -> WhatsApp stickers
+    ['tg', 'tgsticker', 'tg', 'all', 'tgs', 'stickerpack'],
+    // auto-react in every chat (owner, off by default)
+    ['reactall', 'react', 'reactall', 'owner', 'autoreactall', 'globalreact'],
+    // animations (owner)
+    ['anim', 'anim', 'anim', 'owner', 'animations'],
+    ['moon', 'anim', 'moon', 'owner'], ['tmoon', 'anim', 'tmoon', 'owner'], ['stupid', 'anim', 'stupid', 'owner'],
+    ['fire', 'anim', 'fire', 'owner'], ['hypno', 'anim', 'hypno', 'owner'], ['ding', 'anim', 'ding', 'owner'],
+    ['solarsystem', 'anim', 'solarsystem', 'owner'], ['fleaveme', 'anim', 'fleaveme', 'owner'], ['snake', 'anim', 'snake', 'owner'],
+    ['quickheal', 'anim', 'quickheal', 'owner', 'scan'], ['macoc', 'anim', 'macoc', 'owner', 'boot'],
+    ['hand', 'anim', 'hand', 'owner'], ['theart', 'anim', 'theart', 'owner'], ['hart', 'anim', 'hart', 'owner'],
+    ['loading', 'anim', 'loading', 'owner'], ['jio', 'anim', 'jio', 'owner', 'signal'],
+    // Telegram downloader (owner, uses your own Telegram login)
+    ['tdl', 'tdl', 'tdl', 'owner'],
 ];
 
 const BY_VERB = new Map();
