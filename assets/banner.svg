@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" width="900" height="320" role="img" aria-labelledby="t d">
+<title id="t">Al-Jin WhatsApp Bot</title>
+<desc id="d">Al-Jin: self-hosted, open-source WhatsApp Multi-Device bot built on Node.js and Baileys v7, with free AI and 300+ commands.</desc>
+<defs>
+<linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="900" y2="320">
+<stop offset="0" stop-color="#070b1f"/><stop offset=".45" stop-color="#1b1456"/><stop offset=".8" stop-color="#0d2c55"/><stop offset="1" stop-color="#06303a"/>
+</linearGradient>
+<linearGradient id="tg" gradientUnits="userSpaceOnUse" x1="150" y1="0" x2="750" y2="0" spreadMethod="reflect">
+<stop offset="0" stop-color="#00f0ff"/><stop offset=".35" stop-color="#8fb4ff"/><stop offset=".65" stop-color="#d28bff"/><stop offset="1" stop-color="#00ff9d"/>
+<animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="600 0" dur="7s" repeatCount="indefinite"/>
+</linearGradient>
+<linearGradient id="edge" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="900" y2="0" spreadMethod="reflect">
+<stop offset="0" stop-color="#00f0ff"/><stop offset=".5" stop-color="#a78bfa"/><stop offset="1" stop-color="#00ff9d"/>
+<animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="900 0" dur="9s" repeatCount="indefinite"/>
+</linearGradient>
+<radialGradient id="o1"><stop offset="0" stop-color="#00f0ff" stop-opacity=".55"/><stop offset="1" stop-color="#00f0ff" stop-opacity="0"/></radialGradient>
+<radialGradient id="o2"><stop offset="0" stop-color="#a855f7" stop-opacity=".55"/><stop offset="1" stop-color="#a855f7" stop-opacity="0"/></radialGradient>
+<radialGradient id="o3"><stop offset="0" stop-color="#00ff9d" stop-opacity=".4"/><stop offset="1" stop-color="#00ff9d" stop-opacity="0"/></radialGradient>
+<pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse"><path d="M36 0H0V36" fill="none" stroke="#7dd3fc" stroke-opacity=".07" stroke-width="1"/></pattern>
+<filter id="blur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+<clipPath id="clip"><rect x="2" y="2" width="896" height="316" rx="26"/></clipPath>
+<style>
+.f{font-family:'Segoe UI','Helvetica Neue',Arial,'DejaVu Sans',sans-serif}
+.sweep{animation:sw 5s ease-in-out infinite}@keyframes sw{0%{transform:translateX(-300px)}100%{transform:translateX(1200px)}}
+.ln{stroke:#00f0ff;stroke-opacity:.35;stroke-width:1.4;fill:none;stroke-dasharray:6 8;animation:d 2.2s linear infinite}@keyframes d{to{stroke-dashoffset:-14}}
+</style></defs>
+<g clip-path="url(#clip)">
+<rect width="900" height="320" fill="url(#bg)"/>
+<rect width="900" height="320" fill="url(#grid)"/>
+<ellipse cx="170" cy="70" rx="210" ry="150" fill="url(#o1)"><animate attributeName="cx" values="170;230;170" dur="9s" repeatCount="indefinite"/></ellipse>
+<ellipse cx="740" cy="250" rx="230" ry="160" fill="url(#o2)"><animate attributeName="cx" values="740;670;740" dur="11s" repeatCount="indefinite"/></ellipse>
+<ellipse cx="460" cy="320" rx="260" ry="90" fill="url(#o3)"><animate attributeName="cy" values="320;290;320" dur="8s" repeatCount="indefinite"/></ellipse>
+<path class="ln" d="M0 262H120L150 232H300"/><path class="ln" d="M900 70H800L770 100H640" style="animation-duration:2.8s"/><path class="ln" d="M0 60H80L110 90H210" style="animation-duration:3.4s"/><path class="ln" d="M900 270H790L760 240H690" style="animation-duration:2.5s"/>
+<circle cx="428" cy="42" r="1" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="4.5s" begin="0.4s" repeatCount="indefinite"/></circle><circle cx="620" cy="47" r="1.2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="2.3s" begin="1.7s" repeatCount="indefinite"/></circle><circle cx="95" cy="141" r="1" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="3.7s" begin="0.2s" repeatCount="indefinite"/></circle><circle cx="252" cy="49" r="2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="2.3s" begin="0.9s" repeatCount="indefinite"/></circle><circle cx="320" cy="232" r="1.2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="3.7s" begin="2.3s" repeatCount="indefinite"/></circle><circle cx="129" cy="114" r="1.6" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="2.5s" begin="2.8s" repeatCount="indefinite"/></circle><circle cx="601" cy="48" r="1.2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="3.6s" begin="2.1s" repeatCount="indefinite"/></circle><circle cx="819" cy="178" r="2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="3.8s" begin="1.8s" repeatCount="indefinite"/></circle><circle cx="837" cy="110" r="1.2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="2.4s" begin="1.2s" repeatCount="indefinite"/></circle><circle cx="770" cy="247" r="1.6" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="3.9s" begin="0.3s" repeatCount="indefinite"/></circle><circle cx="548" cy="232" r="1.2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="4.3s" begin="0.6s" repeatCount="indefinite"/></circle><circle cx="524" cy="233" r="1" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="4.9s" begin="0.3s" repeatCount="indefinite"/></circle><circle cx="632" cy="272" r="2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="2.4s" begin="0.4s" repeatCount="indefinite"/></circle><circle cx="300" cy="260" r="1" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="2.4s" begin="2.8s" repeatCount="indefinite"/></circle><circle cx="686" cy="246" r="1.6" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="4.2s" begin="3.5s" repeatCount="indefinite"/></circle><circle cx="379" cy="29" r="2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="3.2s" begin="2.4s" repeatCount="indefinite"/></circle><circle cx="529" cy="48" r="1.2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="4.4s" begin="0.5s" repeatCount="indefinite"/></circle><circle cx="277" cy="221" r="2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="4.8s" begin="2.0s" repeatCount="indefinite"/></circle><circle cx="194" cy="247" r="2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="3.7s" begin="3.5s" repeatCount="indefinite"/></circle><circle cx="862" cy="238" r="1.6" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="4.2s" begin="3.9s" repeatCount="indefinite"/></circle><circle cx="723" cy="212" r="1.2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="2.6s" begin="0.7s" repeatCount="indefinite"/></circle><circle cx="36" cy="266" r="1.2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="2.9s" begin="0.0s" repeatCount="indefinite"/></circle><circle cx="453" cy="291" r="1.6" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="3.9s" begin="1.3s" repeatCount="indefinite"/></circle><circle cx="152" cy="281" r="1" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="3.5s" begin="3.5s" repeatCount="indefinite"/></circle><circle cx="720" cy="218" r="2" fill="#cfe9ff"><animate attributeName="opacity" values=".15;.95;.15" dur="3.3s" begin="0.4s" repeatCount="indefinite"/></circle>
+<text x="450" y="78" text-anchor="middle" class="f" font-size="19" font-weight="700" letter-spacing="7" fill="#7dd3fc">WHATSAPP  MULTI-DEVICE  BOT</text>
+<text x="450" y="188" text-anchor="middle" class="f" font-size="128" font-weight="800" letter-spacing="8" fill="url(#tg)" opacity=".55" filter="url(#blur)">AL-JIN</text>
+<text x="450" y="188" text-anchor="middle" class="f" font-size="128" font-weight="800" letter-spacing="8" fill="url(#tg)" stroke="#06091a" stroke-width="1.2" paint-order="stroke">AL-JIN</text>
+<rect x="270" y="208" width="360" height="3" rx="1.5" fill="#ffffff" fill-opacity=".14"/>
+<g clip-path="url(#clip)"><rect class="sweep" x="270" y="208" width="120" height="3" rx="1.5" fill="url(#edge)"/></g>
+<text x="450" y="254" text-anchor="middle" class="f" font-size="25" font-weight="600" fill="#eaf4ff">Self-hosted  •  Open source  •  Baileys v7  •  Free AI</text>
+<text x="450" y="286" text-anchor="middle" class="f" font-size="19" font-weight="600" letter-spacing="1" fill="#9fd8ff">300+ commands  |  Ghost  |  Peek  |  Lurk  |  Downloaders</text>
+</g>
+<rect x="2" y="2" width="896" height="316" rx="26" fill="none" stroke="url(#edge)" stroke-width="2.2"/>
+</svg>
