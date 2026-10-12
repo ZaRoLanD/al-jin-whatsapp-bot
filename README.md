@@ -10,7 +10,7 @@
 
 <br/>
 
-<img src="assets/al-jin-whatsapp-bot.gif" alt="Al-Jin WhatsApp bot hero animation: a hooded cyber guardian with a glowing staff floating beside the WhatsApp logo in a galaxy of circuit lines" width="480"/>
+<img src="assets/al-jin-whatsapp-bot.gif" alt="Al-Jin WhatsApp bot hero animation: a hooded cyber guardian with a glowing staff floating beside the WhatsApp logo in a galaxy of circuit lines" width="100%"/>
 
 <br/><br/>
 
