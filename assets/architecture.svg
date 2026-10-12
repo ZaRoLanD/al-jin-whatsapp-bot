@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 700" width="460" height="700" role="img" aria-labelledby="t d">
+  <title id="t">Al-Jin architecture</title>
+  <desc id="d">WhatsApp servers connect through Baileys v7 to a command router that dispatches to downloader, stealth, group, AI, sticker and utility modules, backed by free AI APIs, FFmpeg, yt-dlp and a local instances folder.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f0c29"/><stop offset="1" stop-color="#171a33"/></linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#a78bfa"/><stop offset=".5" stop-color="#00f0ff"/><stop offset="1" stop-color="#00ff88"/>
+      <animateTransform attributeName="gradientTransform" type="rotate" from="0 .5 .5" to="360 .5 .5" dur="9s" repeatCount="indefinite"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      .b{fill:#11152b;stroke:url(#edge);stroke-width:1.5}
+      .core{fill:#14183a;stroke:#00f0ff;stroke-width:2}
+      .t{font:600 14px 'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e8f6ff;text-anchor:middle}
+      .s{font:500 11px 'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#8fb3c9;text-anchor:middle}
+      .h{font:700 12px monospace;fill:#00f0ff;letter-spacing:3px;text-anchor:middle}
+      .l{stroke:#00f0ff;stroke-width:1.8;fill:none;stroke-dasharray:5 6;animation:d 1s linear infinite}
+      .l2{stroke:#a78bfa;stroke-width:1.5;fill:none;stroke-dasharray:3 6;animation:d 1.4s linear infinite}
+      @keyframes d{to{stroke-dashoffset:-11}}
+      .pulse{animation:p 3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+      @keyframes p{0%,100%{opacity:.8}50%{opacity:1}}
+    </style>
+  </defs>
+  <rect x="2" y="2" width="456" height="696" rx="22" fill="url(#bg)" stroke="#00f0ff" stroke-opacity=".35"/>
+  <text x="230" y="34" class="h">ARCHITECTURE</text>
+
+  <!-- chain -->
+  <path class="l" d="M230 92 V122"/>
+  <path class="l" d="M230 174 V204"/>
+  <path class="l" d="M230 256 V286"/>
+  <rect class="b pulse" x="120" y="48" width="220" height="44" rx="14"/>
+  <text x="230" y="75" class="t">WhatsApp Servers</text>
+  <rect class="b pulse" x="120" y="122" width="220" height="52" rx="14" style="animation-delay:.4s"/>
+  <text x="230" y="146" class="t">Baileys v7 socket</text><text x="230" y="163" class="s">start.js · Multi-Device</text>
+  <rect class="core pulse" x="120" y="204" width="220" height="52" rx="14" style="animation-delay:.8s"/>
+  <text x="230" y="228" class="t">Command router</text><text x="230" y="245" class="s">prefix + dispatch</text>
+
+  <!-- session -->
+  <rect class="b" x="364" y="130" width="84" height="38" rx="12"/>
+  <text x="406" y="153" class="s" style="fill:#e8f6ff">instances/</text>
+  <path class="l2" d="M340 148 H364"/>
+
+  <!-- modules -->
+  <path class="l" d="M230 286 V300 M110 300 H350 M110 300 V318 M350 300 V318 M230 300 V318"/>
+  <rect class="b" x="30" y="318" width="160" height="50" rx="12"/><text x="110" y="348" class="t">Downloaders</text>
+  <rect class="b" x="270" y="318" width="160" height="50" rx="12"/><text x="350" y="348" class="t">Ghost · Peek · Lurk</text>
+  <rect class="b" x="30" y="392" width="160" height="50" rx="12"/><text x="110" y="422" class="t">Group + Admin</text>
+  <rect class="b" x="270" y="392" width="160" height="50" rx="12"/><text x="350" y="422" class="t">AI · OCR · Subs</text>
+  <rect class="b" x="30" y="466" width="160" height="50" rx="12"/><text x="110" y="496" class="t">Stickers + Media</text>
+  <rect class="b" x="270" y="466" width="160" height="50" rx="12"/><text x="350" y="496" class="t">Utility + Owner</text>
+
+  <!-- services -->
+  <path class="l2" d="M110 516 V556 M350 442 V470 M350 516 V556"/>
+  <text x="230" y="548" class="h" style="font-size:11px">POWERED BY</text>
+  <rect class="b" x="30" y="570" width="120" height="56" rx="12"/><text x="90" y="596" class="t">FFmpeg</text><text x="90" y="612" class="s">+ yt-dlp</text>
+  <rect class="b" x="170" y="570" width="120" height="56" rx="12"/><text x="230" y="596" class="t">AI APIs</text><text x="230" y="612" class="s">optional keys</text>
+  <rect class="b" x="310" y="570" width="120" height="56" rx="12"/><text x="370" y="596" class="t">Local disk</text><text x="370" y="612" class="s">your data</text>
+
+  <circle r="5" fill="#00f0ff" filter="url(#glow)"><animateMotion dur="4s" repeatCount="indefinite" path="M230 92 V286"/></circle>
+  <circle r="4" fill="#00ff88" filter="url(#glow)"><animateMotion dur="3s" repeatCount="indefinite" begin="1s" path="M230 286 V300 H350 V318"/></circle>
+  <text x="230" y="672" class="s">All processing happens on your own machine</text>
+</svg>

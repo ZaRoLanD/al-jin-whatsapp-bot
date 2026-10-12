@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" width="720" height="300" role="img" aria-labelledby="t">
+  <title id="t">Al-Jin terminal demo</title>
+  <defs>
+    <linearGradient id="bar" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#302b63"/><stop offset="1" stop-color="#24243e"/></linearGradient>
+    <style>
+      .m{font:500 15px 'JetBrains Mono','Fira Code',Consolas,monospace}
+      .g{fill:#00ff88}.c{fill:#00f0ff}.w{fill:#e8f6ff}.y{fill:#ffd700}.d{fill:#6b7a99}
+      .cur{animation:b 1s steps(1) infinite}
+      @keyframes b{50%{opacity:0}}
+    </style>
+  </defs>
+  <rect x="2" y="2" width="716" height="296" rx="14" fill="#0b0f1a" stroke="#00f0ff" stroke-opacity=".4"/>
+  <path d="M2 16a14 14 0 0 1 14-14h688a14 14 0 0 1 14 14v26H2z" fill="url(#bar)"/>
+  <circle cx="26" cy="22" r="6" fill="#ff5f56"/><circle cx="48" cy="22" r="6" fill="#ffbd2e"/><circle cx="70" cy="22" r="6" fill="#27c93f"/>
+  <text x="360" y="27" text-anchor="middle" class="m d" style="font-size:13px">aljin — bash</text>
+
+  <g class="m">
+    <text x="26" y="78"  class="w" opacity="0"><tspan class="g">$</tspan> npm start
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.02;.06;.93;1" dur="12s" repeatCount="indefinite"/></text>
+    <text x="26" y="108" class="c" opacity="0">[aljin] booting Baileys v7 ...
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.14;.18;.93;1" dur="12s" repeatCount="indefinite"/></text>
+    <text x="26" y="138" class="y" opacity="0">Pairing code: ABCD-1234
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.28;.32;.93;1" dur="12s" repeatCount="indefinite"/></text>
+    <text x="26" y="168" class="g" opacity="0">✔ Linked  ✔ Stealth ON  ✔ Anti-Delete ON
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.46;.50;.93;1" dur="12s" repeatCount="indefinite"/></text>
+    <text x="26" y="206" class="w" opacity="0"><tspan class="c">you</tspan> › .menu
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.62;.66;.93;1" dur="12s" repeatCount="indefinite"/></text>
+    <text x="26" y="236" class="w" opacity="0"><tspan class="g">Al-Jin</tspan> › 300+ commands ready 🚀
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.76;.80;.93;1" dur="12s" repeatCount="indefinite"/></text>
+    <rect x="26" y="262" width="10" height="18" class="c cur"/>
+  </g>
+</svg>

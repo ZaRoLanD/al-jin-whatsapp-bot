@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 600" width="440" height="600" role="img" aria-labelledby="t d">
+  <title id="t">Al-Jin first run flow</title>
+  <desc id="d">Run launcher, enter your WhatsApp number, receive an 8-character pairing code, link the device, send .menu.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f0c29"/><stop offset="1" stop-color="#171a33"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00f0ff"/><stop offset="1" stop-color="#00ff88"/>
+      <animateTransform attributeName="gradientTransform" type="rotate" from="0 .5 .5" to="360 .5 .5" dur="8s" repeatCount="indefinite"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .n{fill:#11152b;stroke:url(#edge);stroke-width:1.6}
+      .tx{font:600 15px 'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#e8f6ff}
+      .sm{font:500 12px 'Segoe UI',Roboto,Helvetica,Arial,sans-serif;fill:#8fb3c9}
+      .num{font:700 15px monospace;fill:#0b0f1a}
+      .arrow{stroke:#00f0ff;stroke-width:2;stroke-dasharray:6 6;fill:none;animation:dash 1s linear infinite}
+      @keyframes dash{to{stroke-dashoffset:-12}}
+      .card{animation:rise 6s ease-in-out infinite}
+      @keyframes rise{0%,100%{opacity:.85}50%{opacity:1}}
+    </style>
+  </defs>
+  <rect x="2" y="2" width="436" height="596" rx="22" fill="url(#bg)" stroke="#00f0ff" stroke-opacity=".35"/>
+  <text x="220" y="40" text-anchor="middle" class="tx" style="font-size:17px;letter-spacing:3px">FIRST RUN</text>
+
+  <!-- arrows -->
+  <path class="arrow" d="M220 128 V160"/>
+  <path class="arrow" d="M220 238 V270"/>
+  <path class="arrow" d="M220 348 V380"/>
+  <path class="arrow" d="M220 458 V490"/>
+
+  <!-- travelling spark -->
+  <circle r="6" fill="#00f0ff" filter="url(#glow)">
+    <animateMotion dur="5s" repeatCount="indefinite" path="M220 80 V540"/>
+  </circle>
+
+  <!-- 1 -->
+  <g class="card"><rect class="n" x="30" y="60" width="380" height="68" rx="16"/>
+  <circle cx="68" cy="94" r="15" fill="#00f0ff"/><text x="68" y="99" text-anchor="middle" class="num">1</text>
+  <text x="98" y="90" class="tx">Run the launcher</text><text x="98" y="110" class="sm">.bat / .command / aljin.sh / npm start</text></g>
+  <!-- 2 -->
+  <g class="card" style="animation-delay:.5s"><rect class="n" x="30" y="170" width="380" height="68" rx="16"/>
+  <circle cx="68" cy="204" r="15" fill="#00f0ff"/><text x="68" y="209" text-anchor="middle" class="num">2</text>
+  <text x="98" y="200" class="tx">Enter your WhatsApp number</text><text x="98" y="220" class="sm">International format, no + sign</text></g>
+  <!-- 3 -->
+  <g class="card" style="animation-delay:1s"><rect class="n" x="30" y="280" width="380" height="68" rx="16"/>
+  <circle cx="68" cy="314" r="15" fill="#00ff88"/><text x="68" y="319" text-anchor="middle" class="num">3</text>
+  <text x="98" y="310" class="tx">Receive an 8-character code</text><text x="98" y="330" class="sm">Shown in your terminal</text></g>
+  <!-- 4 -->
+  <g class="card" style="animation-delay:1.5s"><rect class="n" x="30" y="390" width="380" height="68" rx="16"/>
+  <circle cx="68" cy="424" r="15" fill="#00ff88"/><text x="68" y="429" text-anchor="middle" class="num">4</text>
+  <text x="98" y="420" class="tx">Link the device</text><text x="98" y="440" class="sm">Linked Devices &gt; Link with phone number</text></g>
+  <!-- 5 -->
+  <g class="card" style="animation-delay:2s"><rect class="n" x="30" y="500" width="380" height="68" rx="16"/>
+  <circle cx="68" cy="534" r="15" fill="#ffd700"/><text x="68" y="539" text-anchor="middle" class="num">5</text>
+  <text x="98" y="530" class="tx">Send .menu</text><text x="98" y="550" class="sm">You're live. Enjoy 300+ commands.</text></g>
+</svg>
