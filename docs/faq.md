@@ -50,5 +50,20 @@ Yes, through Termux, with one pasted line. See [One-Click Start](./one-click-dep
 **Does it work on a small server?**
 Yes. Heavy jobs run one at a time, downloads are streamed to disk and deleted after sending, and `.cpulimit` / `.ramlimit` cap resource use.
 
+**Can my number get banned?**
+Your data stays on your own device, but Al-Jin is an unofficial client and WhatsApp can restrict accounts that use automation. Avoid bulk messaging, and consider a secondary number.
+
+**Does it work with WhatsApp Business?**
+Yes, through Linked Devices on both WhatsApp Messenger and WhatsApp Business.
+
+**Which Node.js version do I need?**
+Node.js 20 or newer (`node -v` to check). The one-click launchers do not need Node.js preinstalled.
+
+**The pairing code does not work. What now?**
+Use digits only with the country code, and enter the code under Linked Devices > Link with phone number within about five minutes. If it still fails, stop the bot, remove the old session folder inside `instances/`, and start again for a fresh code. More: [Troubleshooting](./whatsapp-bot-troubleshooting.md).
+
+**I only have 256 MB of RAM. Is there a smaller version?**
+Yes: [Al-Jin Lite](./lite-and-hosting.md).
+
 **Does it need the WhatsApp Business API?**
 No. Al-Jin uses the standard WhatsApp multi-device protocol.

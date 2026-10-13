@@ -1,6 +1,6 @@
 # Support
 
-**WhatsApp support:** message **@insaf.pk** on WhatsApp.
+**WhatsApp support:** message **@insaf.pk** on WhatsApp, or [open a chat directly](https://wa.me/923257853673?text=Hi%2C%20I%20need%20help%20with%20Al-Jin). Support is free; no premium plan is needed.
 
 ## Before you write
 
