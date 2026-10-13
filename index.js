@@ -14,6 +14,7 @@ const BOT_NUMBER = '';
 
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
@@ -329,24 +330,6 @@ function installDeps(dir) {
       'installing dependencies…'
     )
   );
-
-  // Bun server: install with Bun itself (no Node/npm needed), then let packages
-  // that download their own binaries (FFmpeg, yt-dlp) run their setup, which
-  // Bun blocks by default.
-  if (process.versions.bun) {
-    try { fs.rmSync(path.join(dir, 'package-lock.json'), { force: true }); } catch {}
-    const b = spawnSync(process.execPath, ['install', '--production'], {
-      cwd: dir,
-      stdio: 'inherit',
-      timeout: INSTALL_TIMEOUT,
-    });
-    if (b.status !== 0) {
-      throw new Error('bun install failed – see output above');
-    }
-    spawnSync(process.execPath, ['pm', 'trust', '--all'], { cwd: dir, stdio: 'ignore' });
-    say(green('✓ dependencies locked in'));
-    return;
-  }
 
   // On Windows npm is npm.cmd, which cannot be spawned without a shell
   // (plain spawnSync('npm') fails there). Use a shell command string on Windows.
@@ -776,491 +759,144 @@ async function promptNumber(
   );
 }
 
-function spawnSession(
-  root,
-  id,
-  number
-) {
-  const dir =
-    makeInstance(
-      root,
-      id
-    );
+// ONE shared worker process (start.js) hosts every WhatsApp session.
+// Sessions are added to it by message, so the code and libraries are loaded once.
+let worker = null;
+let workerRestarts = 0;
+let workerResetTimer = null;
+let workerMuted = false;
+const workerBacklog = [];
+const hosted = new Map();            // sessionId → number (re-sent to a respawned worker)
 
-  const maxOldSpace =
-    process.env
-      .WRAITH_MAX_OLD_SPACE_SIZE ||
-    '256';
+// Heap limit follows the memory the container really has (cgroup aware):
+// 512 MB → 256 MB heap · 1 GB → 512 MB · 2 GB+ → 1 GB. WRAITH_MAX_OLD_SPACE_SIZE overrides.
+function defaultHeapMb() {
+  let total = os.totalmem();
+  for (const f of ['/sys/fs/cgroup/memory.max', '/sys/fs/cgroup/memory/memory.limit_in_bytes']) {
+    try {
+      const n = Number(fs.readFileSync(f, 'utf8').trim());
+      if (Number.isFinite(n) && n > 0 && n < total) total = n;
+    } catch {}
+  }
+  const mb = Math.floor(total / 1048576);
+  return Math.max(160, Math.min(1536, Math.round(mb * 0.5)));
+}
 
+function ensureWorker(root) {
+  if (worker) return worker;
+
+  const maxOldSpace = process.env.WRAITH_MAX_OLD_SPACE_SIZE || String(defaultHeapMb());
   const args = [
     `--max-old-space-size=${maxOldSpace}`,
     '--max-semi-space-size=16',
     '--expose-gc',
   ];
-
-  if (
-    process.env
-      .WRAITH_V8_POOL_SIZE
-  ) {
-    args.push(
-      `--v8-pool-size=${process.env.WRAITH_V8_POOL_SIZE}`
-    );
-  }
-
-  args.push(
-    path.join(
-      root,
-      'start.js'
-    ),
-    '--session',
-    id
-  );
-
-  if (number) {
-    args.push(
-      '--number',
-      number
-    );
-  }
+  if (process.env.WRAITH_V8_POOL_SIZE) args.push(`--v8-pool-size=${process.env.WRAITH_V8_POOL_SIZE}`);
+  args.push(path.join(root, 'start.js'));
 
   const env = {
     ...process.env,
-
-    UV_THREADPOOL_SIZE:
-      process.env
-        .UV_THREADPOOL_SIZE ||
-      '2',
-
-    WRAITH_REPO_ROOT:
-      root,
-
-    WRAITH_SESSION_ID:
-      id,
-
-    WRAITH_DATA_DIR:
-      dir,
+    UV_THREADPOOL_SIZE: process.env.UV_THREADPOOL_SIZE || '2',
+    WRAITH_REPO_ROOT: root,
+    WRAITH_SESSION_ID: 'main',
+    WRAITH_DATA_DIR: instDir(root, 'main'),
   };
 
-  say(
-    cyan(
-      `starting session ${id}${
-        number
-          ? ' · +' +
-            number
-          : ''
-      }`
-    )
-  );
+  say(cyan(`starting Al-Jin runtime (heap ${maxOldSpace} MB)`));
+  const proc = spawn('node', args, { cwd: root, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], env });
+  worker = proc;
 
-  const proc =
-    spawn(
-      process.versions.bun ? process.execPath : 'node',
-      args,
-      {
-        cwd: root,
-        stdio: [
-          'ignore',
-          'pipe',
-          'pipe',
-          'ipc',
-        ],
-        env,
-      }
-    );
-
-  let muted =
-    false;
-
-  const backlog = [];
-
-  const route = (
-    stream,
-    dest
-  ) => {
-    stream.on(
-      'data',
-      chunk => {
-        if (muted) {
-          backlog.push([
-            dest,
-            chunk,
-          ]);
-        } else {
-          dest.write(
-            chunk
-          );
-        }
-      }
-    );
+  const route = (stream, dest) => {
+    stream.on('data', chunk => {
+      if (workerMuted) workerBacklog.push([dest, chunk]);
+      else dest.write(chunk);
+    });
   };
+  route(proc.stdout, process.stdout);
+  route(proc.stderr, process.stderr);
 
-  route(
-    proc.stdout,
-    process.stdout
-  );
+  proc.on('message', m => {
+    if (m?.type === 'wraith:linked' && m.sessionId) {
+      try { children.get(m.sessionId)?.resolveLinked?.(true); } catch {}
+    }
+    if (m?.type === 'host:deleted' && m.sessionId) {
+      hosted.delete(m.sessionId);
+      children.delete(m.sessionId);
+    }
+  });
 
-  route(
-    proc.stderr,
-    process.stderr
-  );
+  proc.on('error', err => console.error(clock(), red('spawn error:'), err.message));
+
+  proc.on('exit', (code, signal) => {
+    worker = null;
+    for (const rec of children.values()) { try { rec.resolveExit({ code, signal }); } catch {} }
+    if (shuttingDown) return;
+    if (signal === 'SIGINT' || signal === 'SIGTERM') return;
+
+    workerRestarts++;
+    if (workerRestarts > MAX_RESTARTS) {
+      say(red(`runtime exceeded max restarts (${MAX_RESTARTS}) — giving up`));
+      return;
+    }
+    const wait = code === 0 ? 1000 : Math.min(1500 * Math.pow(2, workerRestarts - 1), 30_000);
+    const why = code === 0 ? 'restarting (update / restart command)' : `crashed (${code !== null ? 'code ' + code : 'signal ' + signal})`;
+    say(yellow(`runtime ${why} · retry ${workerRestarts} in ${(wait / 1000).toFixed(1)}s`));
+    setTimeout(() => {
+      if (shuttingDown || worker) return;
+      const w = ensureWorker(root);
+      for (const [sid, num] of hosted.entries()) {
+        try { w.send({ type: 'host:start', sessionId: sid, number: num || null }); } catch {}
+      }
+    }, wait);
+  });
+
+  clearTimeout(workerResetTimer);
+  workerResetTimer = setTimeout(() => { workerRestarts = 0; }, 20_000);
+  return proc;
+}
+
+function spawnSession(root, id, number) {
+  makeInstance(root, id);
+  const w = ensureWorker(root);
+
+  say(cyan(`starting session ${id}${number ? ' · +' + number : ''}`));
 
   let resolveLinked;
   let resolveExit;
+  const linkedPromise = new Promise(r => (resolveLinked = r));
+  const exitPromise = new Promise(r => (resolveExit = r));
 
-  const linkedPromise =
-    new Promise(
-      r =>
-        (resolveLinked =
-          r)
-    );
-
-  const exitPromise =
-    new Promise(
-      r =>
-        (resolveExit =
-          r)
-    );
+  // `proc` keeps the shape the rest of this launcher expects. Stopping one session
+  // goes through the runtime; the shared process itself stops only on shutdown.
+  const proc = {
+    get pid() { return worker?.pid; },
+    kill: (sig) => {
+      try { (worker || w).send({ type: 'host:stop', sessionId: id }); } catch {}
+      if (sig === 'SIGKILL') { try { worker?.kill('SIGKILL'); } catch {} }
+    },
+  };
 
   const rec = {
     number,
     proc,
     restarts: 0,
     resetTimer: null,
-
     resolveLinked,
     resolveExit,
-
-    mute: () => {
-      muted = true;
-    },
-
+    mute: () => { workerMuted = true; },
     unmute: () => {
-      muted = false;
-
-      for (
-        const [
-          dest,
-          chunk,
-        ] of backlog
-      ) {
-        dest.write(
-          chunk
-        );
-      }
-
-      backlog.length = 0;
+      workerMuted = false;
+      for (const [dest, chunk] of workerBacklog) dest.write(chunk);
+      workerBacklog.length = 0;
     },
   };
 
-  children.set(
-    id,
-    rec
-  );
+  children.set(id, rec);
+  hosted.set(id, number || null);
+  try { w.send({ type: 'host:start', sessionId: id, number: number || null }); }
+  catch (e) { console.error(clock(), red('could not reach runtime:'), e.message); }
 
-  proc.on(
-    'message',
-    m => {
-      if (
-        m?.type ===
-        'wraith:linked'
-      ) {
-        try {
-          resolveLinked(
-            true
-          );
-        } catch {}
-      }
-
-      if (
-        m?.type ===
-          'wraith:spawn_session' &&
-        m.sessionId
-      ) {
-        if (
-          children.has(
-            m.sessionId
-          )
-        ) {
-          say(
-            yellow(
-              `session ${m.sessionId} is already running`
-            )
-          );
-        } else {
-          say(
-            green(
-              `dynamic spawn request received for session ${m.sessionId}${
-                m.number
-                  ? ' (+' +
-                    m.number +
-                    ')'
-                  : ''
-              }`
-            )
-          );
-
-          spawnSession(
-            root,
-            m.sessionId,
-            m.number ||
-              null
-          );
-        }
-      }
-
-      if (
-        m?.type ===
-        'wraith:restart_all'
-      ) {
-        say(
-          cyan(
-            `multi-session update requested by ${id} — restarting all other sessions`
-          )
-        );
-
-        for (
-          const [
-            otherId,
-            otherRec,
-          ] of children.entries()
-        ) {
-          if (
-            otherId !== id
-          ) {
-            restartingSessions.add(
-              otherId
-            );
-
-            try {
-              otherRec.proc.kill(
-                'SIGTERM'
-              );
-            } catch {}
-          }
-        }
-      }
-
-      if (
-        m?.type ===
-          'wraith:delete_session' &&
-        m.sessionId
-      ) {
-        const targetId =
-          m.sessionId;
-
-        say(
-          yellow(
-            `delete session request received for ${targetId}`
-          )
-        );
-
-        if (
-          children.has(
-            targetId
-          )
-        ) {
-          const targetRec =
-            children.get(
-              targetId
-            );
-
-          try {
-            targetRec.proc.kill(
-              'SIGTERM'
-            );
-          } catch {}
-
-          children.delete(
-            targetId
-          );
-        }
-
-        const targetDir =
-          instDir(
-            root,
-            targetId
-          );
-
-        setTimeout(
-          () => {
-            try {
-              fs.rmSync(
-                targetDir,
-                {
-                  recursive: true,
-                  force: true,
-                }
-              );
-
-              say(
-                green(
-                  `deleted session instance directory: ${targetId}`
-                )
-              );
-            } catch (e) {
-              say(
-                red(
-                  `failed to remove directory for ${targetId}: ${e.message}`
-                )
-              );
-            }
-          },
-          1500
-        );
-      }
-    }
-  );
-
-  proc.on(
-    'error',
-    err =>
-      console.error(
-        clock(),
-        red(
-          'spawn error:'
-        ),
-        err.message
-      )
-  );
-
-  proc.on(
-    'exit',
-    (code, signal) => {
-      children.delete(
-        id
-      );
-
-      try {
-        resolveExit({
-          code,
-          signal,
-        });
-      } catch {}
-
-      if (shuttingDown) {
-        return;
-      }
-
-      if (
-        restartingSessions.has(
-          id
-        )
-      ) {
-        restartingSessions.delete(
-          id
-        );
-
-        say(
-          cyan(
-            `restarting session ${id} for update…`
-          )
-        );
-
-        setTimeout(
-          () => {
-            if (
-              !shuttingDown
-            ) {
-              spawnSession(
-                root,
-                id,
-                rec.number
-              );
-            }
-          },
-          1000
-        );
-
-        return;
-      }
-
-      if (
-        signal ===
-          'SIGINT' ||
-        signal ===
-          'SIGTERM'
-      ) {
-        return;
-      }
-
-      rec.restarts++;
-
-      if (
-        rec.restarts >
-        MAX_RESTARTS
-      ) {
-        say(
-          red(
-            `${id}: exceeded max restarts (${MAX_RESTARTS}) — giving up`
-          )
-        );
-
-        return;
-      }
-
-      const wait =
-        Math.min(
-          1500 *
-            Math.pow(
-              2,
-              rec.restarts -
-                1
-            ),
-          30_000
-        );
-
-      const exitDetail =
-        code !== null
-          ? `code ${code}`
-          : signal
-          ? `signal ${signal}`
-          : 'code null';
-
-      const why =
-        code === 0
-          ? 'restarting for update/clean exit'
-          : `crashed (${exitDetail})`;
-
-      say(
-        yellow(
-          `${id}: ${why} · retry ${rec.restarts} in ${(wait / 1000).toFixed(1)}s`
-        )
-      );
-
-      setTimeout(
-        () => {
-          if (
-            !shuttingDown
-          ) {
-            spawnSession(
-              root,
-              id,
-              rec.number
-            );
-          }
-        },
-        wait
-      );
-    }
-  );
-
-  clearTimeout(
-    rec.resetTimer
-  );
-
-  rec.resetTimer =
-    setTimeout(
-      () => {
-        rec.restarts = 0;
-      },
-      20_000
-    );
-
-  return {
-    proc,
-    linkedPromise,
-    exitPromise,
-  };
+  return { proc, linkedPromise, exitPromise };
 }
 
 async function waitForLink(
@@ -1516,22 +1152,13 @@ function quiet(sig) {
     )
   );
 
-  for (
-    const { proc } of
-      children.values()
-  ) {
-    try {
-      proc.kill(
-        'SIGTERM'
-      );
-    } catch {}
+  // One SIGTERM stops the shared runtime; it saves every session first (up to ~3 s).
+  if (worker) {
+    try { worker.once('exit', () => process.exit(0)); worker.kill('SIGTERM'); } catch {}
+    setTimeout(() => process.exit(0), 4000);
+  } else {
+    process.exit(0);
   }
-
-  setTimeout(
-    () =>
-      process.exit(0),
-    800
-  );
 }
 
 process.on(

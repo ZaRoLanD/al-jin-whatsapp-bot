@@ -6,6 +6,7 @@
 import { reply, safe, argOrQuoted, pick, clamp } from '../lib/x.js';
 import { httpGetJson, fetchBuffer } from '../lib/net.js';
 import { getPrefix } from '../core/settings.js';
+import { perSession } from '../core/context.js';
 
 const P = () => getPrefix();
 const enc = encodeURIComponent;
@@ -35,7 +36,7 @@ export const translate = safe('translate', async (sock, chat, msg, args) => {
 });
 
 // ═════════ trivia ═════════
-const trivias = new Map(); // chat → { answer, options, at }
+const trivias = perSession(() => new Map()); // chat → { answer, options, at }
 const dec = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
 export const trivia = safe('trivia', async (sock, chat, msg, args) => {
     const t = trivias.get(chat);

@@ -10,9 +10,10 @@ import { extractViewOnce } from './peek.js';
 import { sendInteractive, createQuickReply } from '../lib/buttons.js';
 import { getPrefix } from '../core/settings.js';
 import { inState, statePath } from '../core/paths.js';
+import { sessionLocal, perSession, forEachSession } from '../core/context.js';
 
 const STATE = () => inState('ghost.json');
-const LEDGER_FILE = () => inState('ghost-ledger.json');
+const LEDGER_FILE = () => inState('ghost-G().ledger.json');
 
 const DEBUG = process.env.WRAITH_DEBUG === '1';
 const MAX_STORAGE_MEDIA_BYTES = 30 * 1024 * 1024; // 30 MB per file
@@ -20,46 +21,48 @@ const LEDGER_MAX = 400;      // max text entries
 const MEDIA_QUEUE_MAX = 20;  // max media files on disk (FIFO)
 
 // ─────────────────────────────────────────────
-//  Persistent ledger + media FIFO queue
+//  Persistent ledger + media FIFO queue (one per session)
 // ─────────────────────────────────────────────
-const ledger = new Map();
-const mediaQueue = []; // { id, file } — insertion order
-let saveTimer = null;
+const G = sessionLocal(() => {   // loaded from disk the first time a session needs it
+    const st = { ledger: new Map(), mediaQueue: [], saveTimer: null };
+    loadLedger(st);
+    return st;
+});
 
 function enqueueMedia(id, file) {
     if (!id || !file) return;
     // De-dup: if this id somehow already has a queue entry, drop the old file first
-    const prior = mediaQueue.findIndex(x => x.id === id);
+    const prior = G().mediaQueue.findIndex(x => x.id === id);
     if (prior !== -1) {
-        try { dropFromVault(mediaQueue[prior].file); } catch {}
-        mediaQueue.splice(prior, 1);
+        try { dropFromVault(G().mediaQueue[prior].file); } catch {}
+        G().mediaQueue.splice(prior, 1);
     }
-    mediaQueue.push({ id, file });
-    while (mediaQueue.length > MEDIA_QUEUE_MAX) {
-        const old = mediaQueue.shift();
+    G().mediaQueue.push({ id, file });
+    while (G().mediaQueue.length > MEDIA_QUEUE_MAX) {
+        const old = G().mediaQueue.shift();
         try { dropFromVault(old.file); } catch {}
-        const rec = ledger.get(old.id);
+        const rec = G().ledger.get(old.id);
         if (rec && rec.file === old.file) {
             rec.file = null;  // keep text, drop attachment
-            ledger.set(old.id, rec);
+            G().ledger.set(old.id, rec);
         }
         if (DEBUG) console.log(`[ghost] media cap: evicted file for ${old.id}`);
     }
 }
 
 function removeFromQueue(id) {
-    const qi = mediaQueue.findIndex(x => x.id === id);
-    if (qi !== -1) mediaQueue.splice(qi, 1);
+    const qi = G().mediaQueue.findIndex(x => x.id === id);
+    if (qi !== -1) G().mediaQueue.splice(qi, 1);
 }
 
-function loadLedger() {
+function loadLedger(st) {
     try {
         const file = LEDGER_FILE();
         if (!fs.existsSync(file)) return;
         const raw = JSON.parse(fs.readFileSync(file, 'utf-8'));
         const cutoff = Date.now() - CONFIG.memoryTTL;
         for (const [id, rec] of Object.entries(raw)) {
-            if (rec?.at >= cutoff) ledger.set(id, rec);
+            if (rec?.at >= cutoff) st.ledger.set(id, rec);
         }
         // Rebuild queue oldest→newest, enforce cap
         const withMedia = [...ledger.entries()].filter(([, r]) => r.file).sort((a, b) => a[1].at - b[1].at);
@@ -71,33 +74,32 @@ function loadLedger() {
         }
         for (let i = overflow; i < withMedia.length; i++) {
             const [id, r] = withMedia[i];
-            mediaQueue.push({ id, file: r.file });
+            st.mediaQueue.push({ id, file: r.file });
         }
-        if (DEBUG) console.log(`[ghost] loaded ${ledger.size} entries, ${mediaQueue.length} media tracked`);
+        if (DEBUG) console.log(`[ghost] loaded ${st.ledger.size} entries, ${st.mediaQueue.length} media tracked`);
     } catch (e) {
-        if (DEBUG) console.log('[ghost] ledger load failed:', e.message);
+        if (DEBUG) console.log('[ghost] st.ledger load failed:', e.message);
     }
 }
 
 function scheduleSave() {
-    if (saveTimer) return;
-    saveTimer = setTimeout(() => {
-        saveTimer = null;
+    if (G().saveTimer) return;
+    G().saveTimer = setTimeout(() => {
+        G().saveTimer = null;
         try {
             statePath();
-            const obj = Object.fromEntries(ledger);
+            const obj = Object.fromEntries(G().ledger);
             fs.writeFileSync(LEDGER_FILE(), JSON.stringify(obj));
         } catch (e) {
-            if (DEBUG) console.log('[ghost] ledger save failed:', e.message);
+            if (DEBUG) console.log('[ghost] G().ledger save failed:', e.message);
         }
     }, 3000);
 }
 
-loadLedger();
 
 export function getLedgerEntry(id) {
     if (!id) return null;
-    return ledger.get(id) || null;
+    return G().ledger.get(id) || null;
 }
 
 // ─────────────────────────────────────────────
@@ -195,8 +197,8 @@ export async function ghostCommand(sock, chat, msg, args) {
     const statusBody = (prefix = '') =>
         `${prefix}antidelete · ${s.on ? 'ON' : 'OFF'}\n` +
         `antiedit   · ${s.edit ? 'ON' : 'OFF'}\n` +
-        `ledger     · ${ledger.size}/${LEDGER_MAX}\n` +
-        `media      · ${mediaQueue.length}/${MEDIA_QUEUE_MAX} files\n`;
+        `G().ledger     · ${G().ledger.size}/${LEDGER_MAX}\n` +
+        `media      · ${G().mediaQueue.length}/${MEDIA_QUEUE_MAX} files\n`;
 
     const buttons = () => [
         createQuickReply(s.on ? 'Antidelete OFF' : 'Antidelete ON', `${p}ghost ${s.on ? 'off' : 'on'}`),
@@ -342,14 +344,14 @@ export async function remember(sock, msg) {
             }
         }
 
-        ledger.set(id, record);
+        G().ledger.set(id, record);
         if (record.file) enqueueMedia(id, record.file);
 
-        if (ledger.size > LEDGER_MAX) {
-            const firstKey = ledger.keys().next().value;
-            const firstRec = ledger.get(firstKey);
+        if (G().ledger.size > LEDGER_MAX) {
+            const firstKey = G().ledger.keys().next().value;
+            const firstRec = G().ledger.get(firstKey);
             if (firstRec?.file) dropFromVault(firstRec.file);
-            ledger.delete(firstKey);
+            G().ledger.delete(firstKey);
             removeFromQueue(firstKey);
         }
         scheduleSave();
@@ -363,8 +365,8 @@ export async function remember(sock, msg) {
 // ─────────────────────────────────────────────
 //  De-dup caches
 // ─────────────────────────────────────────────
-const processedDeletes = new Set();
-const processedEdits = new Set();
+const processedDeletes = perSession(() => new Set());
+const processedEdits = perSession(() => new Set());
 
 function markProcessed(set, key, max = 500) {
     set.add(key);
@@ -389,7 +391,7 @@ export async function revealDelete(sock, msg) {
     const culprit = msg.participant || msg.key?.participant || msg.key?.remoteJid;
     const selfNum = digitsOf(sock.user?.id || '');
 
-    const rec = ledger.get(targetId);
+    const rec = G().ledger.get(targetId);
     if (!rec) return;
 
     const scopeJid = rec.scope || (msg.key?.remoteJid?.endsWith('@g.us') ? msg.key.remoteJid : null);
@@ -410,7 +412,7 @@ export async function revealDelete(sock, msg) {
     if (rec.scope) { try { scope = (await sock.groupMetadata(rec.scope)).subject; } catch {} }
 
     const lines = [
-        `👻 *ghost ledger · erased*`, ``,
+        `👻 *ghost G().ledger · erased*`, ``,
         `*erased by ·* @${digitsOf(bestCulprit)}`,
         `*original sender ·* @${digitsOf(bestSender)}`,
         `*when ·* ${stamp}`,
@@ -434,7 +436,7 @@ export async function revealDelete(sock, msg) {
         dropFromVault(rec.file);
     }
 
-    ledger.delete(targetId);
+    G().ledger.delete(targetId);
     removeFromQueue(targetId);
     scheduleSave();
 }
@@ -464,7 +466,7 @@ export async function revealEdit(sock, msg) {
     if (processedEdits.has(editDedupeKey)) return;
     markProcessed(processedEdits, editDedupeKey);
 
-    const rec = targetId ? ledger.get(targetId) : null;
+    const rec = targetId ? G().ledger.get(targetId) : null;
     const originalText = rec?.text || '';
     const editor = msg.participant || msg.key?.participant || msg.key?.remoteJid;
     const scopeJid = rec?.scope || (msg.key?.remoteJid?.endsWith('@g.us') ? msg.key.remoteJid : null);
@@ -478,7 +480,7 @@ export async function revealEdit(sock, msg) {
     if (rec && targetId) {
         rec.text = afterText || rec.text;
         rec.editedAt = Date.now();
-        ledger.set(targetId, rec);
+        G().ledger.set(targetId, rec);
         scheduleSave();
     }
 
@@ -492,7 +494,7 @@ export async function revealEdit(sock, msg) {
     if (rec?.scope) { try { scope = (await sock.groupMetadata(rec.scope)).subject; } catch {} }
 
     const lines = [
-        `👻 *ghost ledger · edited*`, ``,
+        `👻 *ghost G().ledger · edited*`, ``,
         `*edited by ·* @${digitsOf(bestEditor)}`,
         `*original sender ·* @${digitsOf(bestOriginalSender)}`,
         `*when ·* ${stamp}`,
@@ -519,7 +521,7 @@ export async function revealSecretEdit(sock, msg) {
 
     const targetId = sem.targetMessageKey?.id || msg.key?.id;
     const editor = msg.key?.participant || msg.key?.remoteJid;
-    const rec = targetId ? ledger.get(targetId) : null;
+    const rec = targetId ? G().ledger.get(targetId) : null;
     const scopeJid = rec?.scope || (msg.key?.remoteJid?.endsWith('@g.us') ? msg.key.remoteJid : null);
     const bestEditor = await getBestUserJid(editor, sock, scopeJid);
     const bestOriginalSender = await getBestUserJid(rec?.from || editor, sock, scopeJid);
@@ -540,7 +542,7 @@ export async function revealSecretEdit(sock, msg) {
     if (rec?.scope) { try { scope = (await sock.groupMetadata(rec.scope)).subject; } catch {} }
 
     const lines = [
-        `👻 *ghost ledger · edited*`, ``,
+        `👻 *ghost G().ledger · edited*`, ``,
         `*edited by ·* @${digitsOf(bestEditor)}`,
         `*original sender ·* @${digitsOf(bestOriginalSender)}`,
         `*when ·* ${stamp}`,
@@ -553,34 +555,34 @@ export async function revealSecretEdit(sock, msg) {
         await sock.sendMessage(ownerJid(), { text: lines.join('\n'), mentions: [bestEditor, bestOriginalSender] });
     } catch (e) { if (DEBUG) console.log('[ghost] reveal secret failed:', e.message); }
 
-    if (rec && targetId) { rec.editedAt = Date.now(); ledger.set(targetId, rec); scheduleSave(); }
+    if (rec && targetId) { rec.editedAt = Date.now(); G().ledger.set(targetId, rec); scheduleSave(); }
 }
 
 // ─────────────────────────────────────────────
 //  Housekeeping — 24 h TTL sweep + orphan media GC
 // ─────────────────────────────────────────────
-setInterval(() => {
+setInterval(() => forEachSession(() => {
     try {
         const cutoff = Date.now() - CONFIG.memoryTTL;
         let changed = false;
-        for (const [id, rec] of ledger.entries()) {
+        for (const [id, rec] of G().ledger.entries()) {
             if (rec.at < cutoff) {
                 if (rec.file) dropFromVault(rec.file);
-                ledger.delete(id);
+                G().ledger.delete(id);
                 removeFromQueue(id);
                 changed = true;
             }
         }
-        for (let i = mediaQueue.length - 1; i >= 0; i--) {
-            const q = mediaQueue[i];
-            const rec = ledger.get(q.id);
+        for (let i = G().mediaQueue.length - 1; i >= 0; i--) {
+            const q = G().mediaQueue[i];
+            const rec = G().ledger.get(q.id);
             if (!rec || rec.file !== q.file) {
                 try { dropFromVault(q.file); } catch {}
-                mediaQueue.splice(i, 1);
+                G().mediaQueue.splice(i, 1);
             }
         }
         if (changed) scheduleSave();
     } catch (e) {
         if (DEBUG) console.log('[ghost] sweeper error:', e.message);
     }
-}, 5 * 60 * 1000);
+}), 5 * 60 * 1000).unref?.();

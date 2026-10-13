@@ -11,6 +11,7 @@ import {
 import { cfgOf, groupCfg, globalCfg, statsStore, leftStore, userKey } from './x-hooks.js';
 import { getPrefix } from '../core/settings.js';
 import { migrateAction, actionSub, describeAction } from '../lib/guard-core.js';
+import { perSession } from '../core/context.js';
 
 const P = () => getPrefix();
 const onOff = (v) => (v ? 'on ✅' : 'off ⭕');
@@ -261,7 +262,7 @@ export const poll = safe('poll', async (sock, chat, msg, args) => {
     await sock.sendMessage(chat, { poll: { name: name.slice(0, 200), values: opts.map((o) => o.slice(0, 90)), selectableCount: multi ? 0 : 1 } });
 });
 
-const votes = new Map(); // chat → { q, by, yes:Set, no:Set }
+const votes = perSession(() => new Map()); // chat → { q, by, yes:Set, no:Set }
 export const vote = safe('vote', async (sock, chat, msg, args) => {
     const sub = (args[0] || '').toLowerCase();
     const v = votes.get(chat);

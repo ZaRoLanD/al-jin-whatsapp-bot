@@ -13,6 +13,7 @@ import { cacheChannelFromMessage } from './core/jid-resolver.js';
 import { getPrefix, getReplyMode, setReplyMode } from './core/settings.js';
 import { isOwner, primeSenderIdentity } from './core/identity.js';
 import { CONFIG } from './config.js';
+import { perSession } from './core/context.js';
 import { reqlocationCommand, handleIncomingLocation } from './modules/location.js';
 import { WAMessageStubType } from '@whiskeysockets/baileys';
 import { extractInteractiveResponse, matchChoice } from './lib/buttons.js';
@@ -392,7 +393,7 @@ function plainText(msg) {
   return '';
 }
 
-const processedCommands = new Set();
+const processedCommands = perSession(() => new Set());   // the same message id can reach several sessions
 function markCommandProcessed(msgId) {
   if (!msgId) return false;
   if (processedCommands.has(msgId)) return true;

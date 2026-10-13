@@ -7,14 +7,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { logsPath } from '../core/paths.js';
 import { getBestUserJid } from '../core/jid-resolver.js';
+import { perSession, sessionLocal, registerFlusher } from '../core/context.js';
 
 const FLUSH_MS = 2000;
 
 // filePath → string[] (pending lines)
-const buffers = new Map();
-let flushTimer = null;
-
-const loggedMsgIds = new Set();
+const buffers = perSession(() => new Map());   // each session logs to its own files
+const LS = sessionLocal(() => ({ flushTimer: null }));
+const loggedMsgIds = perSession(() => new Set());
 function isDuplicateMsg(msgId) {
   if (!msgId) return false;
   if (loggedMsgIds.has(msgId)) return true;
@@ -24,13 +24,13 @@ function isDuplicateMsg(msgId) {
 }
 
 function scheduleFlush() {
-  if (flushTimer) return;
-  flushTimer = setTimeout(flushNow, FLUSH_MS);
-  if (typeof flushTimer.unref === 'function') flushTimer.unref();
+  if (LS().flushTimer) return;
+  const t = LS().flushTimer = setTimeout(flushNow, FLUSH_MS);
+  if (typeof t.unref === 'function') t.unref();
 }
 
 export function flushNow() {
-  flushTimer = null;
+  LS().flushTimer = null;
   for (const [filePath, lines] of buffers) {
     if (!lines.length) continue;
     const data = lines.join('');
@@ -51,8 +51,7 @@ export function flushSync() {
     try { fs.appendFileSync(filePath, lines.join('')); lines.length = 0; } catch {}
   }
 }
-process.on('SIGINT', flushSync);
-process.on('SIGTERM', flushSync);
+registerFlusher(flushSync);   // written on shutdown, for every session
 
 async function formatIdentity(jid, sock = null, groupJid = null) {
   if (!jid) return 'N/A';

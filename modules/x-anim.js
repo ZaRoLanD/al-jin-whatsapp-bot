@@ -10,10 +10,11 @@
 //  minimum gap between edits so WhatsApp never sees an edit flood.
 // ---------------------------------------------
 import { safe, reply, prefix } from '../lib/x.js';
+import { perSession } from '../core/context.js';
 
 const MAX_EDITS = 48;
 const MIN_GAP_MS = 700;
-const running = new Map();   // chat -> { stop }
+const running = perSession(() => new Map());   // chat -> { stop }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const range = (n) => Array.from({ length: n }, (_, i) => i);
 const grid = (h, w, cell) => range(h).map((y) => range(w).map((x) => cell(x, y)).join('')).join('\n');

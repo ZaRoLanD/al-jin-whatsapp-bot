@@ -14,6 +14,7 @@ import { digitsOf, getBestUserJid, getBestUserJidSync } from '../core/jid-resolv
 import { getStatusStoriesForUser } from '../core/status-store.js';
 import { fetchBuffer } from '../lib/net.js';
 import { getTarget, ownerOnly, notifyOwner } from '../lib/targets.js';
+import { sessionLocal, perSession } from '../core/context.js';
 import { startNoAction } from './noaction.js';
 
 const DEBUG = process.env.WRAITH_DEBUG === '1';
@@ -24,18 +25,19 @@ const tz = () => CONFIG.timezone || 'Asia/Karachi';
 const fmt = (ms) => new Date(ms).toLocaleString('en-GB', { timeZone: tz() });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-let cache = null;
+const SPY = sessionLocal(() => ({ cache: null }));   // one watch-list per session
 function S() {
-    if (!cache) {
+    const st = SPY();
+    if (!st.cache) {
         const raw = readJson(FILE(), {});
-        cache = { statusAlert: raw.statusAlert || {}, watch: raw.watch || {} };
+        st.cache = { statusAlert: raw.statusAlert || {}, watch: raw.watch || {} };
     }
-    return cache;
+    return st.cache;
 }
-function save() { writeJsonAtomic(FILE(), cache); }
+function save() { writeJsonAtomic(FILE(), S()); }
 
 // ── status alerts ───────────────────────────────────────────────────────────
-const seenStatus = new Set();
+const seenStatus = perSession(() => new Set());
 
 function unwrap(m) {
     return m?.viewOnceMessageV2?.message || m?.viewOnceMessage?.message || m?.ephemeralMessage?.message || m;
@@ -153,7 +155,7 @@ async function pollWatched(sock) {
     }
 }
 
-const debounce = new Map();
+const debounce = perSession(() => new Map());
 async function onContacts(sock, updates) {
     const w = S().watch;
     if (!Object.keys(w).length) return;

@@ -1,6 +1,9 @@
 // config.js — Al-Jin per-session config
+// CONFIG looks like one plain object, but every session gets its own copy
+// (owner number, overrides from state/config.json). See core/context.js.
 import fs from 'fs';
 import { statePath, inState } from './core/paths.js';
+import { currentSession } from './core/context.js';
 
 const BASE = {
   owner: "",
@@ -18,6 +21,8 @@ const BASE = {
   media: { maxImages: 10, maxCouplePairs: 5, maxDownloadMB: 100 },
 };
 
+const CFG_KEY = Symbol('config');
+
 function readJson(p, fallback) {
   try {
     if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf-8'));
@@ -32,7 +37,25 @@ function loadSessionConfig() {
   return { ...BASE, ...overrides, owner };
 }
 
-export const CONFIG = loadSessionConfig();
+function live() {
+  const s = currentSession();
+  let c = s.bag.get(CFG_KEY);
+  if (!c) { c = loadSessionConfig(); s.bag.set(CFG_KEY, c); }
+  return c;
+}
+
+export const CONFIG = new Proxy({}, {
+  get: (_t, p) => live()[p],
+  set: (_t, p, v) => { live()[p] = v; return true; },
+  has: (_t, p) => p in live(),
+  deleteProperty: (_t, p) => delete live()[p],
+  ownKeys: () => Reflect.ownKeys(live()),
+  getOwnPropertyDescriptor: (_t, p) => {
+    const d = Reflect.getOwnPropertyDescriptor(live(), p);
+    if (d) d.configurable = true;
+    return d;
+  },
+});
 
 export function saveSessionConfig(patch = {}) {
   statePath(); // ensure state dir exists

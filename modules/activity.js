@@ -13,6 +13,7 @@ import { isOwner } from '../core/identity.js';
 import { readJson, writeJsonAtomic } from '../core/state-io.js';
 import { inState } from '../core/paths.js';
 import { getBestUserJidSync, getCachedPnForLid } from '../core/jid-resolver.js';
+import { sessionLocal, registerFlusher } from '../core/context.js';
 
 const STATE = () => inState('activity.json');
 const DEBUG = process.env.WRAITH_DEBUG === '1';
@@ -20,42 +21,39 @@ const FLUSH_MS = 5000;
 const MAX_SENDERS_PER_CHAT = 150;   // prune when above this
 const PRUNE_TO = 100;               // ...down to this many (most recent kept)
 
-let _cache = null;
-let _dirty = false;
-let _flushTimer = null;
+const AS = sessionLocal(() => ({ _cache: null, _dirty: false, _flushTimer: null }));   // per-session state
 
 function read() {
-    if (_cache) return _cache;
-    _cache = readJson(STATE(), {});
+    if (AS()._cache) return AS()._cache;
+    AS()._cache = readJson(STATE(), {});
     // clean up records created by older versions
-    for (const jid of Object.keys(_cache)) {
-        if (isIgnored(jid)) delete _cache[jid];
+    for (const jid of Object.keys(AS()._cache)) {
+        if (isIgnored(jid)) delete AS()._cache[jid];
     }
-    return _cache;
+    return AS()._cache;
 }
 
 function write(o) {
-    _cache = o;
-    _dirty = true;
+    AS()._cache = o;
+    AS()._dirty = true;
     scheduleFlush();
 }
 
 function scheduleFlush() {
-    if (_flushTimer) return;
-    _flushTimer = setTimeout(() => {
-        _flushTimer = null;
-        if (!_dirty) return;
-        try { writeJsonAtomic(STATE(), _cache); _dirty = false; } catch {}
+    if (AS()._flushTimer) return;
+    AS()._flushTimer = setTimeout(() => {
+        AS()._flushTimer = null;
+        if (!AS()._dirty) return;
+        try { writeJsonAtomic(STATE(), AS()._cache); AS()._dirty = false; } catch {}
     }, FLUSH_MS);
-    if (typeof _flushTimer.unref === 'function') _flushTimer.unref();
+    if (typeof AS()._flushTimer.unref === 'function') AS()._flushTimer.unref();
 }
 
 function flushNow() {
-    if (!_dirty) return;
-    try { writeJsonAtomic(STATE(), _cache); _dirty = false; } catch {}
+    if (!AS()._dirty) return;
+    try { writeJsonAtomic(STATE(), AS()._cache); AS()._dirty = false; } catch {}
 }
-process.on('SIGINT', flushNow);
-process.on('SIGTERM', flushNow);
+registerFlusher(flushNow);   // written on shutdown, for every session
 
 // status posts and broadcast lists are not chats
 function isIgnored(jid) {

@@ -32,6 +32,7 @@ import {
 } from '../lib/moviebox.js';
 import { openRemote, openHls, sendStream, effectiveCapBytes, purgeLeftovers } from '../lib/stream-send.js';
 import { resolveQuery, rankResults, aiConfigured } from '../lib/title-resolver.js';
+import { perSession } from '../core/context.js';
 
 const queue = new PQueue({ concurrency: 1 });          // one download at a time
 const SESSION_TTL = 15 * 60 * 1000;
@@ -44,8 +45,8 @@ const FOOTER = 'Provided by 𝐀𝐥-𝐉𝐢𝐧';
 const MIME = { mp4: 'video/mp4', m4v: 'video/mp4', mkv: 'video/x-matroska', avi: 'video/x-msvideo', webm: 'video/webm', ogv: 'video/ogg', mov: 'video/quicktime' };
 
 const P = () => prefix();
-const sessions = new Map();   // token → pending selection
-const runs = new Map();       // chat  → running "-full" series
+const sessions = perSession(() => new Map());   // token → pending selection
+const runs = perSession(() => new Map());       // chat  → running "-full" series
 
 // ── small helpers ────────────────────────────
 function prune() {

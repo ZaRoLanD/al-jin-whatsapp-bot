@@ -154,10 +154,9 @@ export async function updateCommand(sock, chat, msg) {
 
         if (depsChanged) {
             await send('📦 dependencies changed — installing (this may take a minute)…');
-            const onBun = !!process.versions.bun;
             const inst = await tryRun(
-                onBun ? process.execPath : 'npm',
-                onBun ? ['install', '--production'] : ['install', '--omit=dev', '--no-audit', '--no-fund', '--loglevel=error'],
+                'npm',
+                ['install', '--omit=dev', '--no-audit', '--no-fund', '--loglevel=error'],
                 { timeout: 300_000 }
             );
             if (!inst.ok) {
@@ -170,21 +169,17 @@ export async function updateCommand(sock, chat, msg) {
             return send('✅ Al-Jin is already up to date. Nothing to restart.');
         }
 
-        const sessionId = process.env.WRAITH_SESSION_ID || 'main';
-        const isMain = sessionId === 'main';
+        const isMain = true;   // one shared process: an update restarts every session together
 
         // 6) Tell the user what happens next, THEN trigger restart
         await send(
             `✅ *update complete*\n\n` +
             `\`\`\`\n${(out || 'pulled latest').slice(0, 500)}\n\`\`\`\n\n` +
             `_sessions & settings untouched_\n` +
-            `_restarting ${isMain ? 'all sessions' : 'this session'} in 6 seconds…_`
+            `_restarting all sessions in 6 seconds…_`
         );
 
         // 7) If executed from main session, inform parent to restart all secondary sessions
-        if (isMain) {
-            try { process.send?.({ type: 'wraith:restart_all' }); } catch {}
-        }
 
         // 8) Give time for message delivery, then exit non-zero so the
         //    panel / launcher auto-restarts this process.

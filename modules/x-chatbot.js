@@ -7,6 +7,7 @@
 import { reply, safe, quotedOf, textOfMessage, senderJid, isGroup } from '../lib/x.js';
 import { getPrefix } from '../core/settings.js';
 import { smartChat } from '../lib/llm.js';
+import { perSession } from '../core/context.js';
 
 const SYSTEM = 'You are Al-Jin, a smart, friendly and quick WhatsApp assistant. Always answer in the same language and script the user writes in '
   + '(Roman Urdu stays Roman Urdu, Urdu script stays Urdu script, English stays English). Be concise — usually under 120 words unless the user asks for detail. '
@@ -14,7 +15,7 @@ const SYSTEM = 'You are Al-Jin, a smart, friendly and quick WhatsApp assistant. 
 
 const MAX_TURNS = 8;                       // messages kept per conversation
 const TTL_MS = 30 * 60_000;
-const memory = new Map();                  // key → { at, msgs }
+const memory = perSession(() => new Map());                  // key → { at, msgs }
 
 const keyOf = (chat, msg) => (isGroup(chat) ? `${chat}:${senderJid(msg)}` : chat);
 function sweep() { const now = Date.now(); for (const [k, v] of memory) if (now - v.at > TTL_MS) memory.delete(k); }

@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import { reply, safe, pick, stableScore, bar, targetJid, tag, senderJid, withTmp, ffmpeg, contextOf } from '../lib/x.js';
 import { httpGetJson, fetchBuffer } from '../lib/net.js';
 import { getPrefix } from '../core/settings.js';
+import { perSession } from '../core/context.js';
 
 const P = () => getPrefix();
 const q = (args) => args.join(' ').trim();
@@ -103,7 +104,7 @@ export const rps = safe('rps', async (sock, chat, msg, args) => {
 });
 
 // ── number guessing ────────────────────────────
-const guessGames = new Map(); // chat → { n, tries, at }
+const guessGames = perSession(() => new Map()); // chat → { n, tries, at }
 export const guess = safe('guess', async (sock, chat, msg, args) => {
     const g = guessGames.get(chat);
     const sub = (args[0] || '').toLowerCase();
@@ -124,7 +125,7 @@ export const guess = safe('guess', async (sock, chat, msg, args) => {
 const WORDS = ('whatsapp keyboard galaxy pyramid monsoon festival lantern journey compass harvest horizon library notebook mountain thunder '
     + 'umbrella treasure velocity butterfly algorithm champion firewall satellite desert triangle diamond orchestra gravity painter blanket').split(' ');
 const STAGES = ['', '😐', '😐\n |', '😐\n/|', '😐\n/|\\', '😐\n/|\\\n/', '😵\n/|\\\n/ \\'];
-const hang = new Map();
+const hang = perSession(() => new Map());
 const drawHang = (h) => `🪢 *hangman*\n\n${STAGES[h.wrong.size] || ''}\n\n\`${[...h.word].map((c) => (h.got.has(c) ? c : '_')).join(' ')}\`\n\nwrong: ${[...h.wrong].join(' ') || '—'}  (${6 - h.wrong.size} left)`;
 export const hangman = safe('hangman', async (sock, chat, msg, args) => {
     const a = (args[0] || '').toLowerCase();
@@ -146,7 +147,7 @@ export const hangman = safe('hangman', async (sock, chat, msg, args) => {
 });
 
 // ── tic-tac-toe ────────────────────────────────
-const ttt = new Map(); // chat → game
+const ttt = perSession(() => new Map()); // chat → game
 const LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 const winner = (b) => { for (const [x, y, z] of LINES) if (b[x] && b[x] === b[y] && b[x] === b[z]) return b[x]; return b.every(Boolean) ? 'draw' : null; };
 const NUM = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
