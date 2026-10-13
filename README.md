@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="assets/banner1.svg" width="100%" alt="Al-Jin WhatsApp Bot: free, open-source, self-hosted WhatsApp Multi-Device bot on original Baileys v7 with nearly 400 commands"/>
+<img src="assets/jin.svg" width="100%" alt="Al-Jin WhatsApp Bot: free, open-source, self-hosted WhatsApp Multi-Device bot on original Baileys v7 with nearly 400 commands"/>
 
 # Al-Jin: Free Open-Source WhatsApp Bot
 
