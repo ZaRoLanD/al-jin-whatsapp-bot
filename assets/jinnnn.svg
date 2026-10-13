@@ -1,0 +1,274 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" width="900" height="320" role="img" aria-labelledby="t d">
+<title id="t">Al-Jin WhatsApp Bot — by Malik Mehab</title>
+<desc id="d">Al-Jin: self-hosted, open-source WhatsApp Multi-Device bot built on Node.js and Baileys v7, with free AI and ~400 commands. By Malik Mehab.</desc>
+
+<defs>
+  <!-- ══════════ BACKGROUND GRADIENTS ══════════ -->
+  <radialGradient id="bgGlow" cx=".5" cy=".5" r=".8">
+    <stop offset="0"   stop-color="#0a1535"/>
+    <stop offset=".6"  stop-color="#060b1a"/>
+    <stop offset="1"   stop-color="#02040a"/>
+  </radialGradient>
+  <radialGradient id="centerHalo" cx=".5" cy=".5" r=".5">
+    <stop offset="0"   stop-color="#22d3ee" stop-opacity=".15"/>
+    <stop offset=".6"  stop-color="#818cf8" stop-opacity=".05"/>
+    <stop offset="1"   stop-color="#000000" stop-opacity="0"/>
+  </radialGradient>
+
+  <!-- ══════════ TEXT GRADIENTS ══════════ -->
+  <linearGradient id="titleGrad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="600" y2="0" spreadMethod="repeat">
+    <stop offset="0"   stop-color="#22d3ee"/>
+    <stop offset=".25" stop-color="#818cf8"/>
+    <stop offset=".5"  stop-color="#c084fc"/>
+    <stop offset=".75" stop-color="#34d399"/>
+    <stop offset="1"   stop-color="#22d3ee"/>
+    <animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="600 0" dur="8s" repeatCount="indefinite"/>
+  </linearGradient>
+  <linearGradient id="shineGrad" gradientUnits="userSpaceOnUse" x1="-200" y1="0" x2="200" y2="0">
+    <stop offset="0"   stop-color="#ffffff" stop-opacity="0"/>
+    <stop offset=".5"  stop-color="#ffffff" stop-opacity=".9"/>
+    <stop offset="1"   stop-color="#ffffff" stop-opacity="0"/>
+    <animateTransform attributeName="gradientTransform" type="translate" values="-200 0;1100 0;1100 0" keyTimes="0;0.4;1" dur="6s" repeatCount="indefinite"/>
+  </linearGradient>
+
+  <!-- ══════════ RING & SMOKE GRADIENTS ══════════ -->
+  <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#22d3ee" stop-opacity=".8"/>
+    <stop offset=".5" stop-color="#a855f7" stop-opacity=".4"/>
+    <stop offset="1" stop-color="#34d399" stop-opacity=".8"/>
+  </linearGradient>
+  <linearGradient id="smokeGold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#fde68a" stop-opacity=".8"/>
+    <stop offset="1" stop-color="#f59e0b" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="smokeCyan" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#a5f3fc" stop-opacity=".8"/>
+    <stop offset="1" stop-color="#06b6d4" stop-opacity="0"/>
+  </linearGradient>
+
+  <!-- ══════════ BADGE GLOWS ══════════ -->
+  <radialGradient id="waGlow"><stop offset="0" stop-color="#22c55e" stop-opacity=".6"/><stop offset="1" stop-color="#22c55e" stop-opacity="0"/></radialGradient>
+  <radialGradient id="lampGlow"><stop offset="0" stop-color="#fbbf24" stop-opacity=".7"/><stop offset="1" stop-color="#fbbf24" stop-opacity="0"/></radialGradient>
+  <radialGradient id="jinnGlow"><stop offset="0" stop-color="#22d3ee" stop-opacity=".6"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></radialGradient>
+
+  <!-- ══════════ FILTERS ══════════ -->
+  <filter id="glowBlur" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="6" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="smokeBlur" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="5"/>
+  </filter>
+  <filter id="textGlow" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur stdDeviation="4" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+
+  <!-- ══════════ CLIPPING ══════════ -->
+  <clipPath id="bannerClip"><rect x="2" y="2" width="896" height="316" rx="24"/></clipPath>
+</defs>
+
+<g clip-path="url(#bannerClip)">
+
+  <!-- ══════════ BACKGROUND ══════════ -->
+  <rect width="900" height="320" fill="url(#bgGlow)"/>
+  <rect width="900" height="320" fill="url(#centerHalo)"/>
+
+  <!-- ══════════ BACKGROUND TECH GRID ══════════ -->
+  <g opacity=".15">
+    <pattern id="hexGrid" width="40" height="69.28" patternUnits="userSpaceOnUse">
+      <path d="M40 17.32 L20 5.77 L0 17.32 L0 40.41 L20 51.96 L40 40.41 Z" fill="none" stroke="#22d3ee" stroke-width="1" opacity=".5"/>
+      <path d="M20 51.96 L20 74.61 L40 86.16 L40 63.51 Z" fill="none" stroke="#22d3ee" stroke-width="1" opacity=".5"/>
+      <path d="M0 63.51 L0 86.16 L20 97.71 L20 75.06 Z" fill="none" stroke="#22d3ee" stroke-width="1" opacity=".5"/>
+    </pattern>
+    <rect width="900" height="320" fill="url(#hexGrid)"/>
+  </g>
+
+  <!-- ══════════ 360° CONCENTRIC RINGS ══════════ -->
+  <!-- Outer Ring -->
+  <circle cx="450" cy="160" r="210" fill="none" stroke="url(#ringGrad)" stroke-width="1.5" stroke-dasharray="4 12" opacity=".6">
+    <animateTransform attributeName="transform" type="rotate" from="0 450 160" to="360 450 160" dur="40s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Mid Ring -->
+  <circle cx="450" cy="160" r="180" fill="none" stroke="#22d3ee" stroke-width=".8" stroke-dasharray="2 8" opacity=".4">
+    <animateTransform attributeName="transform" type="rotate" from="360 450 160" to="0 450 160" dur="30s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Inner Ring -->
+  <circle cx="450" cy="160" r="140" fill="none" stroke="url(#ringGrad)" stroke-width="2" stroke-dasharray="20 15" opacity=".5">
+    <animateTransform attributeName="transform" type="rotate" from="0 450 160" to="360 450 160" dur="20s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- ══════════ 360° ORBITING SMOKE & ENERGY ══════════ -->
+  <g filter="url(#smokeBlur)">
+    <!-- Thick swirling smoke connecting all elements in a circle -->
+    <path d="M 450 40 A 120 120 0 0 1 650 120 A 120 120 0 0 1 750 260 A 120 120 0 0 1 550 300 A 120 120 0 0 1 250 260 A 120 120 0 0 1 150 120 A 120 120 0 0 1 450 40" 
+          fill="none" stroke="url(#smokeGold)" stroke-width="12" stroke-linecap="round" opacity=".4">
+      <animate attributeName="stroke-dashoffset" values="0;-400" dur="12s" repeatCount="indefinite" stroke-dasharray="100 200"/>
+      <animate attributeName="stroke-opacity" values=".2;.6;.2" dur="6s" repeatCount="indefinite"/>
+    </path>
+    <!-- Secondary Cyan Smoke Ring -->
+    <path d="M 450 60 A 140 140 0 0 1 630 140 A 140 140 0 0 1 730 260 A 140 140 0 0 1 550 280 A 140 140 0 0 1 270 260 A 140 140 0 0 1 170 140 A 140 140 0 0 1 450 60" 
+          fill="none" stroke="url(#smokeCyan)" stroke-width="8" stroke-linecap="round" opacity=".3">
+      <animate attributeName="stroke-dashoffset" values="0;400" dur="15s" repeatCount="indefinite" stroke-dasharray="80 250"/>
+      <animate attributeName="stroke-opacity" values=".1;.4;.1" dur="8s" begin="1s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <!-- ══════════ CENTRAL TEXT CORE (AL-JIN) ══════════ -->
+  <g>
+    <!-- Central Dark Backdrop for Text Legibility -->
+    <circle cx="450" cy="160" r="130" fill="#02040a" opacity=".7" filter="url(#glowBlur)"/>
+    
+    <!-- Top Eyebrow -->
+    <text x="450" y="85" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" letter-spacing="8" fill="#7dd3fc" opacity=".9">WHATSAPP MULTI-DEVICE BOT</text>
+
+    <!-- Main Title -->
+    <text x="450" y="185" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="110" font-weight="900" letter-spacing="10" fill="url(#titleGrad)" filter="url(#textGlow)" opacity=".35">AL-JIN</text>
+    <text x="450" y="185" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="110" font-weight="900" letter-spacing="10" fill="url(#titleGrad)" stroke="#04091a" stroke-width="2" paint-order="stroke">AL-JIN</text>
+    <text x="450" y="185" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="110" font-weight="900" letter-spacing="10" fill="url(#shineGrad)">AL-JIN</text>
+
+    <!-- Subtitle -->
+    <text x="450" y="220" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#eaf4ff" letter-spacing="1">Self-hosted • Open source • Baileys v7 • Free AI</text>
+  </g>
+
+  <!-- ══════════ 360° ORBITING ELEMENTS ══════════ -->
+
+  <!-- ── Element 1: WhatsApp Logo (Top Left Orbit) ── -->
+  <g transform="translate(220 70)">
+    <!-- Orbit Glow -->
+    <circle cx="0" cy="0" r="45" fill="url(#waGlow)">
+      <animate attributeName="r" values="40;50;40" dur="4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".6;.9;.6" dur="4s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Badge Ring -->
+    <circle cx="0" cy="0" r="32" fill="none" stroke="#4ade80" stroke-opacity=".5" stroke-width="1.5" stroke-dasharray="4 6">
+      <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="15s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Badge Disc -->
+    <circle cx="0" cy="0" r="26" fill="#16a34a"/>
+    <circle cx="0" cy="0" r="26" fill="none" stroke="#a7f3d0" stroke-opacity=".6" stroke-width="1"/>
+    <ellipse cx="-6" cy="-10" rx="16" ry="8" fill="#ffffff" opacity=".15"/>
+    <!-- WhatsApp Icon -->
+    <g transform="translate(-11 -11) scale(0.95)">
+      <path fill="#ffffff" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </g>
+    <!-- Pulse -->
+    <circle cx="0" cy="0" r="26" fill="none" stroke="#4ade80" stroke-width="2" opacity=".8">
+      <animate attributeName="r" values="26;45" dur="3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".8;0" dur="3s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- ── Element 2: Magic Lamp (Top Right Orbit) ── -->
+  <g transform="translate(680 70)">
+    <!-- Orbit Glow -->
+    <circle cx="0" cy="0" r="45" fill="url(#lampGlow)">
+      <animate attributeName="r" values="40;50;40" dur="4.5s" begin="0.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".6;.9;.6" dur="4.5s" begin="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Badge Ring -->
+    <circle cx="0" cy="0" r="32" fill="none" stroke="#fbbf24" stroke-opacity=".5" stroke-width="1.5" stroke-dasharray="4 6">
+      <animateTransform attributeName="transform" type="rotate" from="360 0 0" to="0 0 0" dur="15s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Badge Disc -->
+    <circle cx="0" cy="0" r="26" fill="#b45309"/>
+    <circle cx="0" cy="0" r="26" fill="none" stroke="#fde68a" stroke-opacity=".6" stroke-width="1"/>
+    <ellipse cx="-6" cy="-10" rx="16" ry="8" fill="#ffffff" opacity=".15"/>
+    <!-- Lamp Icon -->
+    <g transform="translate(-14 -12) scale(0.8)" fill="#3b1d05" stroke="#3b1d05">
+      <path d="M2 30 L17 23 L15 37 Z"/>
+      <path d="M15 25 Q13 42 28 45 L40 45 Q55 42 53 25 Q51 15 34 15 Q17 15 15 25 Z"/>
+      <path d="M53 23 Q64 21 64 32 Q64 42 55 41" fill="none" stroke-width="3.6" stroke-linecap="round"/>
+      <rect x="28" y="10" width="12" height="6" rx="2"/>
+      <circle cx="34" cy="7" r="3"/>
+    </g>
+    <!-- Pulse -->
+    <circle cx="0" cy="0" r="26" fill="none" stroke="#fbbf24" stroke-width="2" opacity=".8">
+      <animate attributeName="r" values="26;45" dur="3.5s" begin="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".8;0" dur="3.5s" begin="1.5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- ── Element 3: The Jinn (Bottom Right Orbit) ── -->
+  <g transform="translate(680 250)">
+    <!-- Jinn Aura -->
+    <circle cx="0" cy="0" r="50" fill="url(#jinnGlow)" opacity=".7">
+      <animate attributeName="r" values="45;55;45" dur="5s" begin="1s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".5;.8;.5" dur="5s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Jinn Body (Ethereal Swirl) -->
+    <path d="M 0 30 C -20 20, -30 0, -20 -20 C -10 -40, 10 -40, 20 -20 C 30 0, 20 20, 0 30 Z" 
+          fill="url(#smokeCyan)" filter="url(#glowBlur)" opacity=".9">
+      <animate attributeName="opacity" values=".7;1;.7" dur="4s" begin="1s" repeatCount="indefinite"/>
+    </path>
+    <!-- Jinn Head -->
+    <circle cx="0" cy="-30" r="12" fill="#a5f3fc" filter="url(#glowBlur)"/>
+    <circle cx="0" cy="-30" r="8" fill="#e0f7ff"/>
+    <!-- Jinn Turban -->
+    <path d="M -10 -35 Q 0 -45 10 -35 Q 0 -40 -10 -35" fill="#fbbf24"/>
+    <path d="M -12 -32 Q 0 -28 12 -32" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+    <!-- Jinn Face -->
+    <circle cx="-4" cy="-30" r="1.5" fill="#0f172a"/>
+    <circle cx="4" cy="-30" r="1.5" fill="#0f172a"/>
+    <path d="M -3 -25 Q 0 -22 3 -25" fill="none" stroke="#0f172a" stroke-width="1.5"/>
+    <!-- Jinn Tail connecting to center -->
+    <path d="M 0 30 C -10 50, -30 60, -60 60" fill="none" stroke="url(#smokeGold)" stroke-width="6" stroke-linecap="round" filter="url(#smokeBlur)">
+      <animate attributeName="stroke-opacity" values=".4;.9;.4" dur="3s" begin="1s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <!-- ══════════ ORBITING PARTICLES (360° sweep) ══════════ -->
+  <g>
+    <!-- Particle 1: Sweeping clockwise -->
+    <circle r="2.5" fill="#a5f3fc" opacity=".8">
+      <animateMotion dur="10s" repeatCount="indefinite" path="M 450 40 A 120 120 0 0 1 650 120 A 120 120 0 0 1 750 260 A 120 120 0 0 1 550 300 A 120 120 0 0 1 250 260 A 120 120 0 0 1 150 120 A 120 120 0 0 1 450 40"/>
+      <animate attributeName="opacity" values="0;1;1;0" dur="10s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Particle 2: Sweeping counter-clockwise -->
+    <circle r="1.5" fill="#fde68a" opacity=".8">
+      <animateMotion dur="15s" begin="2s" repeatCount="indefinite" path="M 450 60 A 140 140 0 0 1 630 140 A 140 140 0 0 1 730 260 A 140 140 0 0 1 550 280 A 140 140 0 0 1 270 260 A 140 140 0 0 1 170 140 A 140 140 0 0 1 450 60"/>
+      <animate attributeName="opacity" values="0;.8;.8;0" dur="15s" begin="2s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Particle 3 -->
+    <circle r="2" fill="#c084fc" opacity=".6">
+      <animateMotion dur="12s" begin="5s" repeatCount="indefinite" path="M 450 40 A 120 120 0 0 1 650 120 A 120 120 0 0 1 750 260 A 120 120 0 0 1 550 300 A 120 120 0 0 1 250 260 A 120 120 0 0 1 150 120 A 120 120 0 0 1 450 40"/>
+      <animate attributeName="opacity" values="0;.7;.7;0" dur="12s" begin="5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- ══════════ BOTTOM FEATURE PILLS (Professional Layout) ══════════ -->
+  <g font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="600" text-anchor="middle">
+    <!-- Pill 1: Commands -->
+    <g transform="translate(240 275)">
+      <rect x="-65" y="-14" width="130" height="28" rx="14" fill="#22d3ee" fill-opacity=".08" stroke="#22d3ee" stroke-opacity=".3" stroke-width="1"/>
+      <circle cx="-50" cy="0" r="2" fill="#22d3ee"><animate attributeName="opacity" values=".3;1;.3" dur="3s" repeatCount="indefinite"/></circle>
+      <text x="0" y="4" fill="#cffafe">~400 Commands</text>
+    </g>
+    <!-- Pill 2: Free AI -->
+    <g transform="translate(390 275)">
+      <rect x="-45" y="-14" width="90" height="28" rx="14" fill="#a855f7" fill-opacity=".08" stroke="#a855f7" stroke-opacity=".3" stroke-width="1"/>
+      <circle cx="-30" cy="0" r="2" fill="#c084fc"><animate attributeName="opacity" values=".3;1;.3" dur="3s" begin="0.8s" repeatCount="indefinite"/></circle>
+      <text x="0" y="4" fill="#f3e8ff">Free AI</text>
+    </g>
+    <!-- Pill 3: Anti-Delete -->
+    <g transform="translate(525 275)">
+      <rect x="-58" y="-14" width="116" height="28" rx="14" fill="#34d399" fill-opacity=".08" stroke="#34d399" stroke-opacity=".3" stroke-width="1"/>
+      <circle cx="-43" cy="0" r="2" fill="#34d399"><animate attributeName="opacity" values=".3;1;.3" dur="3s" begin="1.6s" repeatCount="indefinite"/></circle>
+      <text x="0" y="4" fill="#d1fae5">Anti-Delete</text>
+    </g>
+    <!-- Pill 4: Author -->
+    <g transform="translate(680 275)">
+      <rect x="-68" y="-14" width="136" height="28" rx="14" fill="#f59e0b" fill-opacity=".12" stroke="#f59e0b" stroke-opacity=".5" stroke-width="1"/>
+      <path d="M -52 -2 L -50 2 L -46 4 L -50 6 L -52 10 L -54 6 L -58 4 L -54 2 Z" fill="#fbbf24">
+        <animate attributeName="opacity" values=".5;1;.5" dur="3s" begin="2.4s" repeatCount="indefinite"/>
+      </path>
+      <text x="5" y="4" fill="#fef3c7" font-weight="700" letter-spacing="0.5">by Malik Mehab</text>
+    </g>
+  </g>
+
+</g>
+
+<!-- ══════════ ANIMATED BORDER ══════════ -->
+<rect x="2" y="2" width="896" height="316" rx="24" fill="none" stroke="url(#titleGrad)" stroke-width="2.5" opacity=".8"/>
+<rect x="6" y="6" width="888" height="308" rx="20" fill="none" stroke="#ffffff" stroke-opacity=".05" stroke-width="1"/>
+</svg>
