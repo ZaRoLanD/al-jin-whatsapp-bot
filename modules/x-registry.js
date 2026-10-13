@@ -29,7 +29,9 @@ const LOADERS = {
     tgsticker: () => import('./x-tgsticker.js'),
     react: () => import('./x-react.js'),
     anim: () => import('./x-anim.js'),
-    tdl: () => import('./x-tdl.js'),
+        tdl: () => import('./x-tdl.js'),
+    getpn: () => import('./x-getpn.js'),   // ← add
+
 };
 
 // [verb, module, export, perm, ...aliases]
@@ -181,7 +183,10 @@ const TABLE = [
     ['hand', 'anim', 'hand', 'owner'], ['theart', 'anim', 'theart', 'owner'], ['hart', 'anim', 'hart', 'owner'],
     ['loading', 'anim', 'loading', 'owner'], ['jio', 'anim', 'jio', 'owner', 'signal'],
     // Telegram downloader (owner, uses your own Telegram login)
-    ['tdl', 'tdl', 'tdl', 'owner'],
+        ['tdl', 'tdl', 'tdl', 'owner'],
+    // reveal PN behind username / @lid (owner)
+    ['getpn', 'getpn', 'getpn', 'owner', 'getnumber', 'revealpn'],   // ← add
+
 ];
 
 const BY_VERB = new Map();
