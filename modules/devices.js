@@ -14,11 +14,12 @@ import { getTmpDir } from '../lib/ytdlp.js';
 import { registerChoices, createQuickReply } from '../lib/buttons.js';
 import { getPrefix } from '../core/settings.js';
 import { aiChat } from '../lib/ai.js';
+import { perSession } from '../core/context.js';
 
 const GSM = 'https://www.gsmarena.com';
 const CACHE_TTL = 6 * 3600_000;
 const cache = new Map();                // url → { at, html }  (max 12 pages)
-const pending = new Map();              // `${kind}:${chat}` → { at, items }
+const pending = perSession(() => new Map());              // `${kind}:${chat}` → { at, items }
 const PENDING_TTL = 3 * 60_000;
 
 // ── polite fetch queue ──────────────────────────────────────────────────

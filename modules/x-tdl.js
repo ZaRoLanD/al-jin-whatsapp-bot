@@ -21,6 +21,7 @@ import { downloadToFile } from '../lib/net.js';
 import { inData } from '../core/paths.js';
 import { getKey } from '../core/keys.js';
 import { getMaxDownloadBytes } from '../core/limits.js';
+import { sessionLocal } from '../core/context.js';
 
 const IS_WIN = process.platform === 'win32';
 const HARD_CAP = 100 * 1024 * 1024;
@@ -31,7 +32,7 @@ const dir = (...p) => { const d = inData('tdl', ...p); fs.mkdirSync(path.dirname
 const setting = (n) => process.env[n] || getKey(n) || '';
 
 let busy = false;                 // one Telegram job at a time (keeps CPU / RAM low)
-let lastResults = [];             // [{ chatId, id, file, size }]
+const XT = sessionLocal(() => ({ lastResults: [] }));   // per-session state
 
 // ── locating / installing the tdl program ─────────────────────────────
 const binPath = () => dir('bin', IS_WIN ? 'tdl.exe' : 'tdl');
@@ -202,13 +203,13 @@ export const tdl = safe('tdl', async (sock, chat, msg, args) => {
     }
 
     if (sub === 'dd') {
-        const picks = [...new Set(args.slice(1).join(',').split(/[,\s]+/).map(Number).filter((n) => n >= 1 && n <= lastResults.length))];
-        if (!picks.length) return reply(sock, chat, msg, lastResults.length ? `Pick numbers from the last search, e.g. \`${p}tdl dd 1,2\`.` : 'Search first: `.tdl <words>`.');
+        const picks = [...new Set(args.slice(1).join(',').split(/[,\s]+/).map(Number).filter((n) => n >= 1 && n <= XT().lastResults.length))];
+        if (!picks.length) return reply(sock, chat, msg, XT().lastResults.length ? `Pick numbers from the last search, e.g. \`${p}tdl dd 1,2\`.` : 'Search first: `.tdl <words>`.');
         const bin = await needTdl();
         await reply(sock, chat, msg, `⬇️ Downloading ${picks.length} file(s)…`);
         return withJob(sock, chat, msg, async (folder) => {
             const byChat = new Map();
-            for (const n of picks) { const r = lastResults[n - 1]; (byChat.get(r.chatId) || byChat.set(r.chatId, []).get(r.chatId)).push({ id: r.id, type: 'message', file: r.file }); }
+            for (const n of picks) { const r = XT().lastResults[n - 1]; (byChat.get(r.chatId) || byChat.set(r.chatId, []).get(r.chatId)).push({ id: r.id, type: 'message', file: r.file }); }
             const selections = [];
             for (const [id, messages] of byChat) {
                 const f = path.join(folder, `.select_${id}.json`);
@@ -230,7 +231,7 @@ export const tdl = safe('tdl', async (sock, chat, msg, args) => {
     // anything else = a search
     if (!chatIds().length) return reply(sock, chat, msg, `Search needs indexed chats. Set \`${p}setvar TDL_CHATS <ids>\`, then \`${p}tdl export\`.`);
     const results = searchExports(args.join(' '));
-    lastResults = results;
+    XT().lastResults = results;
     if (!results.length) return reply(sock, chat, msg, `🔎 No files match “${args.join(' ')}”. (Run \`${p}tdl export\` to refresh the index.)`);
     const lines = results.map((r, i) => `\`${i + 1}\` ${r.file}${r.size ? ` — ${bytesToSize(r.size)}` : ''}`);
     return reply(sock, chat, msg, `🔎 *${results.length} result(s)*\n_Download with ${p}tdl dd 1,2_\n\n${lines.join('\n')}`);

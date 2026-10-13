@@ -3,15 +3,11 @@ import path from 'path';
 import { CONFIG } from '../config.js';
 import { vaultPathRoot } from './paths.js';
 import { getBestUserJidSync } from './jid-resolver.js';
+import { forEachSession } from './context.js';
 
-const VAULT = vaultPathRoot();
-
-// Ensure it exists
-fs.mkdirSync(VAULT, { recursive: true });
-
-const MAX_MB = typeof CONFIG.vaultMaxMB === 'number' && CONFIG.vaultMaxMB > 0
-    ? CONFIG.vaultMaxMB
-    : 200;
+// Each session has its own vault folder; resolved on use so the right one is always picked.
+const vaultDir = () => vaultPathRoot();
+const maxMb = () => (typeof CONFIG.vaultMaxMB === 'number' && CONFIG.vaultMaxMB > 0 ? CONFIG.vaultMaxMB : 200);
 const SWEEP_MS = 60 * 1000;
 
 export function vaultMediaName(senderJid, category = 'chat', msgId = '', ext = 'bin') {
@@ -28,7 +24,7 @@ export function vaultPath(name) {
     if (!safeName || safeName === '.' || safeName === '..') {
         throw new Error('Invalid vault file name');
     }
-    const resolvedVault = path.resolve(VAULT);
+    const resolvedVault = path.resolve(vaultDir());
     const targetPath = path.resolve(resolvedVault, safeName);
     if (!targetPath.startsWith(resolvedVault + path.sep)) {
         throw new Error('Path traversal detected');
@@ -39,6 +35,7 @@ export function vaultPath(name) {
 export function vaultSizeMB() {
     try {
         let total = 0;
+        const VAULT = vaultDir();
         for (const f of fs.readdirSync(VAULT)) {
             const fp = path.join(VAULT, f);
             const st = fs.statSync(fp);
@@ -53,6 +50,7 @@ export function vaultSizeMB() {
 export function purgeVault(olderThanMs = 0) {
     try {
         const cutoff = Date.now() - olderThanMs;
+        const VAULT = vaultDir();
         for (const f of fs.readdirSync(VAULT)) {
             const fp = path.join(VAULT, f);
             try {
@@ -75,6 +73,7 @@ export function dropFromVault(fp) {
 // Sweep periodically if the vault grows too large.
 // Only files idle for 5+ minutes are purged so we never
 // unlink media that is actively being sent.
+// One timer sweeps every session's vault.
 setInterval(() => {
-    if (vaultSizeMB() > MAX_MB) purgeVault(5 * 60 * 1000);
+    forEachSession(() => { if (vaultSizeMB() > maxMb()) purgeVault(5 * 60 * 1000); }).catch(() => {});
 }, SWEEP_MS).unref?.();

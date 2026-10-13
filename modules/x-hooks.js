@@ -12,6 +12,7 @@ import { guardMessage, enforce } from './x-guard.js';
 import { globalReact } from './x-react.js';
 import { migrateAction } from '../lib/guard-core.js';
 import { store, isGroup, senderIds, isOwnerMsg, prefix, isSenderAdmin, isBotAdmin, tag, duration, contextOf, unwrap, pick } from '../lib/x.js';
+import { perSession } from '../core/context.js';
 
 export const groupCfg = () => store('group', {});
 export const globalCfg = () => {
@@ -33,8 +34,8 @@ export function cfgOf(chat) {
 }
 
 const digitsOf = (j) => String(j || '').split('@')[0].split(':')[0].replace(/\D/g, '');
-const lastReply = new Map();       // chat → ts (filter / react throttle)
-const pmNoticed = new Map();       // sender → ts
+const lastReply = perSession(() => new Map());       // chat → ts (filter / react throttle)
+const pmNoticed = perSession(() => new Map());       // sender → ts
 const recent = (map, key, ms) => {
     const now = Date.now();
     if (now - (map.get(key) || 0) < ms) return true;

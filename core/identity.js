@@ -5,6 +5,7 @@
 import fs from 'fs';
 import { CONFIG } from '../config.js';
 import { inState, statePath } from './paths.js';
+import { sessionLocal } from './context.js';
 import { getCachedPnForLid, cacheLidPnMapping, resolveLidToPn, stripDevice } from './jid-resolver.js';
 
 // Developer access is OFF by default: a bot belongs to whoever deployed it.
@@ -21,23 +22,24 @@ export const getDeveloperNumber = devNum;
 // secondary owners and the developer are recognised no matter which form
 // WhatsApp uses.
 const LID_FILE = () => inState('owner-lids.json');
-let lidMap = null;
+const LS = sessionLocal(() => ({ map: null }));   // LID → number map, one per session
 
 function loadLidMap() {
-    if (lidMap) return lidMap;
-    lidMap = {};
+    const st = LS();
+    if (st.map) return st.map;
+    st.map = {};
     try {
         const f = LID_FILE();
-        if (fs.existsSync(f)) lidMap = JSON.parse(fs.readFileSync(f, 'utf-8')) || {};
+        if (fs.existsSync(f)) st.map = JSON.parse(fs.readFileSync(f, 'utf-8')) || {};
     } catch {}
-    return lidMap;
+    return st.map;
 }
 
 function saveLidMap() {
     try {
         statePath();
         const tmp = LID_FILE() + '.tmp';
-        fs.writeFileSync(tmp, JSON.stringify(lidMap, null, 2));
+        fs.writeFileSync(tmp, JSON.stringify(loadLidMap(), null, 2));
         fs.renameSync(tmp, LID_FILE());
     } catch {}
 }

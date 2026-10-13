@@ -14,11 +14,12 @@ import { downloadToFile } from '../lib/net.js';
 import { getTmpDir } from '../lib/ytdlp.js';
 import { isOwner } from '../core/identity.js';
 import { setSetting } from '../core/settings.js';
+import { perSession } from '../core/context.js';
 
 const SYSTEM = 'You are Al-Jin, a concise, friendly WhatsApp assistant. Keep answers short and plain text (light *bold* is fine, no markdown headers or tables).';
 const MAX_OUT = 3800;
 const COOLDOWN_MS = 4000;
-const lastCall = new Map();
+const lastCall = perSession(() => new Map());
 
 const quotedText = (msg) => {
   const q = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;

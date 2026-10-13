@@ -22,6 +22,7 @@ import { readJson, writeJsonAtomic } from '../core/state-io.js';
 import { inState } from '../core/paths.js';
 import { getBestUserJid, digitsOf, resolvePnToLid, stripDevice } from '../core/jid-resolver.js';
 import { getTarget, ownerOnly, notifyOwner } from '../lib/targets.js';
+import { perSession, sessionLocal } from '../core/context.js';
 
 const DEBUG = process.env.WRAITH_DEBUG === '1';
 const FILE = () => inState('noaction.json');
@@ -34,22 +35,22 @@ const PAUSE_MS = 30_000;
 //   { "<digits>": { all, groups: [chatJid], lids: [lidJid], pending: [chatJid] } }
 // The file is never touched when the bot leaves / is removed from a group, so
 // the guard list is still there when the bot is added back.
-let cache = null;
-const attempts = new Map();
-const paused = new Set();
+const NS = sessionLocal(() => ({ cache: null }));   // per-session state
+const attempts = perSession(() => new Map());
+const paused = perSession(() => new Set());
 const attached = new WeakSet();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function guards() {
-    if (!cache) {
-        cache = readJson(FILE(), {}) || {};
-        for (const rec of Object.values(cache)) {
+    if (!NS().cache) {
+        NS().cache = readJson(FILE(), {}) || {};
+        for (const rec of Object.values(NS().cache)) {
             rec.groups ||= []; rec.lids ||= []; rec.pending ||= [];
         }
     }
-    return cache;
+    return NS().cache;
 }
-function save() { writeJsonAtomic(FILE(), cache || {}); }
+function save() { writeJsonAtomic(FILE(), NS().cache || {}); }
 
 function isGuarded(d, chat) {
     const g = guards()[d];
@@ -190,7 +191,7 @@ async function restore(sock, chat, action, jid, d, authorLabel) {
 // Runs when the bot becomes admin (or on start-up): puts guarded numbers back
 // in groups they were explicitly guarded in — covers kicks/demotes that
 // happened while the bot was removed or not admin.
-const reconciling = new Set();
+const reconciling = perSession(() => new Set());
 async function reconcile(sock, chat) {
     if (!String(chat).endsWith('@g.us') || reconciling.has(chat)) return;
     const wanted = Object.entries(guards()).filter(([, rec]) => (rec.groups || []).includes(chat));

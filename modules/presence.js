@@ -12,6 +12,7 @@ import { readJson, writeJsonAtomic } from '../core/state-io.js';
 import { sendInteractive, createQuickReply } from '../lib/buttons.js';
 import { getPrefix } from '../core/settings.js';
 import { inState } from '../core/paths.js';
+import { sessionLocal } from '../core/context.js';
 
 const STATE = () => inState('presence.json');
 const DEBUG = process.env.WRAITH_DEBUG === '1';
@@ -34,7 +35,7 @@ function write(o) {
 // ─────────────────────────────────────────────
 //  Heartbeat — the only presence keep-alive
 // ─────────────────────────────────────────────
-let heartbeatTimer = null;
+const PS = sessionLocal(() => ({ heartbeatTimer: null }));   // per-session state
 
 // Stealth by default: the account shows as offline (no "online" / last seen
 // activity from the bot) unless the owner turns on `.presence online on`.
@@ -48,12 +49,12 @@ async function applyPresence(sock) {
 }
 
 export function startPresenceHeartbeat(sock) {
-    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    if (PS().heartbeatTimer) clearInterval(PS().heartbeatTimer);
 
     // Go quiet right after connecting (WhatsApp marks a fresh link as active), then keep it that way.
     setTimeout(() => { applyPresence(sock); }, 1500);
     setTimeout(() => { applyPresence(sock); }, 8000);
-    heartbeatTimer = setInterval(() => { applyPresence(sock); }, 25_000);
+    PS().heartbeatTimer = setInterval(() => { applyPresence(sock); }, 25_000);
 
     // Start (or resume) the stalk tracker on every connect so its presence
     // subscriptions are always re-created after a restart or reconnect.
@@ -70,9 +71,9 @@ export function startPresenceHeartbeat(sock) {
 //  Stop heartbeat — called by start.js on socket teardown
 // ─────────────────────────────────────────────
 export function stopPresenceHeartbeat() {
-    if (heartbeatTimer) {
-        clearInterval(heartbeatTimer);
-        heartbeatTimer = null;
+    if (PS().heartbeatTimer) {
+        clearInterval(PS().heartbeatTimer);
+        PS().heartbeatTimer = null;
     }
 }
 export function shouldReadReceipts() {

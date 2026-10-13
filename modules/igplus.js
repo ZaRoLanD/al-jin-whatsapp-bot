@@ -19,6 +19,8 @@ import { getTmpDir } from '../lib/ytdlp.js';
 import { ZipWriter } from '../lib/zipstream.js';
 import { registerChoices, createQuickReply } from '../lib/buttons.js';
 import { getPrefix } from '../core/settings.js';
+import { perSession } from '../core/context.js';
+import { sessionLocal } from '../core/context.js';
 
 const MAX_ITEMS = 40;
 const MAX_ZIP_BYTES = 95 * 1024 * 1024;     // stay safely under the 100 MB download rule
@@ -38,7 +40,7 @@ const HOSTS = [
   { base: 'https://i.instagram.com', ua: APP_UA },
 ];
 const SESSION_HELP = 'Fix: send `.setvar IG_SESSIONID <cookie>` (instagram.com → DevTools → Application → Cookies → sessionid). Use a SPARE account.';
-let igPausedUntil = 0;
+const IG = sessionLocal(() => ({ igPausedUntil: 0 }));   // per-session state
 
 const headers = (user, host) => {
   const h = {
@@ -51,7 +53,7 @@ const headers = (user, host) => {
 
 // Tries every host; remembers a 429 so the next commands fail fast instead of making it worse.
 async function igJson(url, user) {
-  const wait = igPausedUntil - Date.now();
+  const wait = IG().igPausedUntil - Date.now();
   if (wait > 0) throw new Error(`Instagram rate limit — paused ${Math.ceil(wait / 60000)} more min to protect ${session() ? 'your session' : 'this IP'}${session() ? '' : `\n${SESSION_HELP}`}`);
   const { pathname, search } = new URL(url);
   let limited = 0; let denied = 0; let last = null;
@@ -70,7 +72,7 @@ async function igJson(url, user) {
     finally { clearTimeout(t); }
   }
   if (limited) {
-    igPausedUntil = Date.now() + 10 * 60_000;
+    IG().igPausedUntil = Date.now() + 10 * 60_000;
     throw new Error(session()
       ? 'Instagram rate limit — your session is cooling down, wait ~10 minutes'
       : `Instagram is rate-limiting this server's IP for anonymous requests (common on hosting panels).\n${SESSION_HELP}`);
@@ -202,7 +204,7 @@ export async function igstoryCommand(sock, chat, msg, rest) {
 }
 
 // ── .igsearch ───────────────────────────────────────────────────────────
-const igPending = new Map();
+const igPending = perSession(() => new Map());
 export async function igsearchCommand(sock, chat, msg, rest) {
   if (!owner(sock, chat, msg)) return;
   const q = rest.join(' ').trim();

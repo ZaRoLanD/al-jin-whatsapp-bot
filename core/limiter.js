@@ -28,7 +28,13 @@ import vm from 'node:vm';
 import util from 'node:util';
 import cp from 'node:child_process';
 import nodeModule from 'node:module';
-import { getSetting, setSetting } from './settings.js';
+import { getSetting as sessionGetSetting, setSetting as sessionSetSetting } from './settings.js';
+import { runOutsideSession } from './context.js';
+
+// The CPU / RAM governor is ONE shared thing for the whole process, so its saved limits live in the
+// main data folder no matter which session's owner typed .cpulimit / .ramlimit.
+const getSetting = (k) => runOutsideSession(() => sessionGetSetting(k));
+const setSetting = (k, v) => runOutsideSession(() => sessionSetSetting(k, v));
 import { cgCpuCores } from '../lib/sysinfo.js';
 
 const HAS_PROC = process.platform === 'linux' && fs.existsSync('/proc/self/stat');

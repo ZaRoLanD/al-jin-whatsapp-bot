@@ -7,8 +7,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { dataDir, inState } from '../core/paths.js';
 import { readJson } from '../core/state-io.js';
+import { sessionLocal } from '../core/context.js';
 
-let ppsInterval = null;
+const PP = sessionLocal(() => ({ ppsInterval: null }));   // per-session state
 
 export function ppsDir() {
     const dir = path.join(dataDir(), 'pps');
@@ -79,25 +80,25 @@ export async function syncProfilePictures(sock) {
 }
 
 export function startPpsSync(sock) {
-    if (ppsInterval) clearInterval(ppsInterval);
+    if (PP().ppsInterval) clearInterval(PP().ppsInterval);
     // Initial sync on startup (delayed slightly to allow connection setup)
     setTimeout(() => {
         syncProfilePictures(sock);
     }, 10000);
 
     // Repeat once every 24 hours (86,400,000 ms)
-    ppsInterval = setInterval(() => {
+    PP().ppsInterval = setInterval(() => {
         syncProfilePictures(sock);
     }, 24 * 60 * 60 * 1000);
 
-    if (typeof ppsInterval.unref === 'function') {
-        ppsInterval.unref();
+    if (typeof PP().ppsInterval.unref === 'function') {
+        PP().ppsInterval.unref();
     }
 }
 
 export function stopPpsSync() {
-    if (ppsInterval) {
-        clearInterval(ppsInterval);
-        ppsInterval = null;
+    if (PP().ppsInterval) {
+        clearInterval(PP().ppsInterval);
+        PP().ppsInterval = null;
     }
 }

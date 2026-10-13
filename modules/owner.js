@@ -13,6 +13,13 @@ import { getVar, setVar, delVar, getAllVars } from '../core/vars.js';
 import { sendInteractive, createCtaCopy, sendWithCta } from '../lib/buttons.js';
 import { resizeSquare } from '../lib/image-resize.js';
 import { getStatusStoriesForUser } from '../core/status-store.js';
+import { currentSessionId } from '../core/context.js';
+import { inState } from '../core/paths.js';
+import { requestPairCode } from '../lib/pair-codes.js';
+
+// The shared runtime (start.js) exposes these; every session lives in the same process.
+const host = () => globalThis.__aljinHost || null;
+const SESSION_ID_RE = /^[A-Za-z0-9_-]{1,32}$/;
 
 function ownerOnly(sock, chat, msg) {
     const from = msg.key.participant || msg.key.remoteJid;
@@ -24,8 +31,7 @@ function ownerOnly(sock, chat, msg) {
 }
 
 function mainSessionOnly(sock, chat, msg) {
-    const currentSession = process.env.WRAITH_SESSION_ID || 'main';
-    if (currentSession !== 'main') {
+    if (currentSessionId() !== 'main') {
         sock.sendMessage(chat, { text: '⛔ Session management commands are only allowed from the main session.' }, { quoted: msg }).catch(() => {});
         return true;
     }
@@ -57,15 +63,15 @@ export async function addsessionCommand(sock, chat, msg, args) {
     }
     const newSessionId = `sess${maxN + 1}`;
 
-    if (typeof process.send === 'function') {
-        process.send({
-            type: 'wraith:spawn_session',
-            sessionId: newSessionId,
-            number: rawNumber
-        });
-        await sock.sendMessage(chat, { text: `✅ Initialized new session \`${newSessionId}\` for +${rawNumber}. Requesting pairing code…` }, { quoted: msg });
+    if (host()) {
+        try {
+            await host().startSession(newSessionId, rawNumber);
+            await sock.sendMessage(chat, { text: `✅ Initialized new session \`${newSessionId}\` for +${rawNumber}. Requesting pairing code (shown in the server console)…` }, { quoted: msg });
+        } catch (e) {
+            await sock.sendMessage(chat, { text: `⚠️ Could not start session: ${e.message}` }, { quoted: msg });
+        }
     } else {
-        await sock.sendMessage(chat, { text: `⚠️ Launcher IPC not connected. Cannot spawn session automatically.` }, { quoted: msg });
+        await sock.sendMessage(chat, { text: `⚠️ Session host not available. Cannot start a session automatically.` }, { quoted: msg });
     }
 }
 
@@ -75,7 +81,11 @@ export async function delsessionCommand(sock, chat, msg, args) {
 
     const targetId = (args?.[0] || '').trim();
     if (!targetId) {
-        return sendWithCta(sock, chat, '❌ Usage: `.delsession <session_id>`\nExample: `.delsession sess2`', { quoted: msg });
+        const live = host()?.listSessions?.().map(s => s.id).filter(id => id !== 'main') || [];
+        return sendWithCta(sock, chat, '❌ Usage: `.delsession <session_id>`\nExample: `.delsession sess2`' + (live.length ? `\nSessions: ${live.join(', ')}` : ''), { quoted: msg });
+    }
+    if (!SESSION_ID_RE.test(targetId)) {
+        return sock.sendMessage(chat, { text: '❌ Invalid session id.' }, { quoted: msg });
     }
 
     if (targetId === 'main') {
@@ -85,23 +95,22 @@ export async function delsessionCommand(sock, chat, msg, args) {
     const repoRoot = process.env.WRAITH_REPO_ROOT || process.cwd();
     const targetDir = path.join(repoRoot, 'instances', targetId);
 
-    if (!fs.existsSync(targetDir)) {
+    if (!fs.existsSync(targetDir) && !host()?.hasSession?.(targetId)) {
         return sock.sendMessage(chat, { text: `❌ Session \`${targetId}\` does not exist.` }, { quoted: msg });
     }
 
-    if (typeof process.send === 'function') {
-        process.send({
-            type: 'wraith:delete_session',
-            sessionId: targetId
-        });
-        await sock.sendMessage(chat, { text: `✅ Signaled launcher to stop process and delete instance folder for session \`${targetId}\`.` }, { quoted: msg });
-    } else {
-        try {
-            fs.rmSync(targetDir, { recursive: true, force: true });
-            await sock.sendMessage(chat, { text: `✅ Deleted instance folder for session \`${targetId}\`.` }, { quoted: msg });
-        } catch (e) {
-            await sock.sendMessage(chat, { text: `⚠️ Failed to delete session folder: ${e.message}` }, { quoted: msg });
+    try {
+        let res;
+        if (host()) {
+            res = await host().deleteSession(targetId);   // stop → log out → wipe memory → delete folder
+        } else {
+            fs.rmSync(targetDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+            res = { removed: !fs.existsSync(targetDir), loggedOut: false };
         }
+        if (!res.removed) throw new Error('folder could not be removed (files in use?) — try again');
+        await sock.sendMessage(chat, { text: `✅ Session \`${targetId}\` deleted${res.loggedOut ? ' and logged out of WhatsApp' : ' (could not log out remotely — remove the linked device from the phone if it still shows)'}.` }, { quoted: msg });
+    } catch (e) {
+        await sock.sendMessage(chat, { text: `⚠️ Failed to delete session: ${e.message}` }, { quoted: msg }).catch(() => {});
     }
 }
 
@@ -432,7 +441,7 @@ export async function getpairCommand(sock, chat, msg, args) {
                 if (qr && !tempSock.authState.creds.registered && !codeSent) {
                     codeSent = true;
                     try {
-                        let code = await tempSock.requestPairingCode(rawNumber);
+                        let { code } = await requestPairCode(tempSock, rawNumber, 0);
                         code = code?.match(/.{1,4}/g)?.join('-') || code;
                         await sendInteractive(
                             sock,
@@ -577,16 +586,12 @@ export async function setsessionCommand(sock, chat, msg, args) {
         fs.writeFileSync(path.join(newSessionDir, 'creds.json'), JSON.stringify(credsData, null, 2));
         fs.writeFileSync(path.join(newStateDir, 'owner.json'), JSON.stringify({ owner: validatedNumber }, null, 2));
 
-        // Signal launcher via IPC to spawn session
-        if (typeof process.send === 'function') {
-            process.send({
-                type: 'wraith:spawn_session',
-                sessionId: newSessionId,
-                number: null
-            });
-            await sock.sendMessage(chat, { text: `✅ Created new session \`${newSessionId}\` for +${validatedNumber} and signaled launcher to start it!` }, { quoted: msg });
+        // Start it inside the shared runtime
+        if (host()) {
+            await host().startSession(newSessionId, null);
+            await sock.sendMessage(chat, { text: `✅ Created new session \`${newSessionId}\` for +${validatedNumber} and started it!` }, { quoted: msg });
         } else {
-            await sock.sendMessage(chat, { text: `✅ Created new session \`${newSessionId}\` for +${validatedNumber}.\n(Note: Launcher IPC not connected. Restart index.js to auto-resume).` }, { quoted: msg });
+            await sock.sendMessage(chat, { text: `✅ Created new session \`${newSessionId}\` for +${validatedNumber}.\n(Restart the bot to start it).` }, { quoted: msg });
         }
 
     } catch (e) {
@@ -778,7 +783,7 @@ export async function chatstatsCommand(sock, chat, msg, args) {
         if (!digits) {
             return sendWithCta(sock, chat, '📊 *chatstats*\n\nUsage: `.chatstats <number>`\nShows aggregated activity for that contact across every chat the bot has seen.', { quoted: msg });
         }
-        const activity = readJson(path.join(process.cwd(), 'state', 'activity.json'), {});
+        const activity = readJson(inState('activity.json'), {});
         let total = 0, firstSeen = 0, lastActive = 0;
         const groupBreakdown = [];
         for (const [jid, rec] of Object.entries(activity)) {

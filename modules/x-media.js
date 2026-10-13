@@ -14,6 +14,7 @@ import { withStickerExif } from '../lib/webp-exif.js';
 import { textToPdf, jpegsToPdf } from '../lib/pdf.js';
 import { isAnimatedWebp } from '../lib/webp-anim.js';
 import { getPrefix } from '../core/settings.js';
+import { perSession } from '../core/context.js';
 
 const P = () => getPrefix();
 const readOut = (p) => fs.readFileSync(p);
@@ -234,7 +235,7 @@ export const avm = safe('avm', async (sock, chat, msg) => {
 });
 
 // ═════════ pdf ═════════
-const pdfQueues = new Map(); // sender → { jpegs:[Buffer], at }
+const pdfQueues = perSession(() => new Map()); // sender → { jpegs:[Buffer], at }
 async function toJpeg(buf) {
     return withTmp(['.img', '.jpg'], async (inp, out) => {
         fs.writeFileSync(inp, buf);

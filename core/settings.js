@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { storePath } from './paths.js';
+import { sessionLocal } from './context.js';
 
 const FILE = () => path.join(storePath(), 'settings.json');
 
@@ -9,23 +10,24 @@ const DEFAULTS = {
   prefix: '.',
 };
 
-let _cache = null;
+const S = sessionLocal(() => ({ cache: null }));   // one settings object per session
 
 function load() {
-  if (_cache) return _cache;
+  const st = S();
+  if (st.cache) return st.cache;
   try {
     const raw = fs.readFileSync(FILE(), 'utf8');
-    _cache = { ...DEFAULTS, ...JSON.parse(raw) };
+    st.cache = { ...DEFAULTS, ...JSON.parse(raw) };
   } catch {
-    _cache = { ...DEFAULTS };
+    st.cache = { ...DEFAULTS };
   }
-  return _cache;
+  return st.cache;
 }
 
 function persist() {
   try {
     fs.mkdirSync(path.dirname(FILE()), { recursive: true });
-    fs.writeFileSync(FILE(), JSON.stringify(_cache, null, 2));
+    fs.writeFileSync(FILE(), JSON.stringify(load(), null, 2));
   } catch (e) {
     console.error('[settings] persist failed:', e.message);
   }

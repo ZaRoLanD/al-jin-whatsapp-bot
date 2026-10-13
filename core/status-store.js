@@ -16,16 +16,19 @@ import { vaultPath, vaultMediaName, dropFromVault } from './vault.js';
 import { getBestUserJid, getBestUserJidSync, digitsOf } from './jid-resolver.js';
 import { writeJsonAtomic } from './state-io.js';
 import { inState } from './paths.js';
+import { perSession, sessionLocal, forEachSession } from './context.js';
 
 const STATE_FILE = () => inState('status-store.json');
 const STATUS_TTL_MS = 24 * 60 * 60 * 1000; // 24 Hours
 const MAX_MEDIA_BYTES = 30 * 1024 * 1024;  // skip stories bigger than 30 MB
 const DEBUG = process.env.WRAITH_DEBUG === '1';
 
-const statusStore = new Map(); // id -> statusObj
-let saveTimer = null;
+const statusStore = perSession(() => new Map()); // id -> statusObj (one per session)
+const SS = sessionLocal(() => ({ saveTimer: null, loaded: false }));
 
 function loadStatusStore() {
+    if (SS().loaded) return;
+    SS().loaded = true;
     try {
         const file = STATE_FILE();
         if (!fs.existsSync(file)) return;
@@ -45,9 +48,10 @@ function loadStatusStore() {
 }
 
 function scheduleSave() {
-    if (saveTimer) return;
-    saveTimer = setTimeout(() => {
-        saveTimer = null;
+    if (SS().saveTimer) return;
+    const st = SS();
+    const saveTimer = st.saveTimer = setTimeout(() => {
+        st.saveTimer = null;
         try {
             writeJsonAtomic(STATE_FILE(), Object.fromEntries(statusStore));
         } catch (e) {
@@ -57,11 +61,10 @@ function scheduleSave() {
     if (typeof saveTimer.unref === 'function') saveTimer.unref();
 }
 
-loadStatusStore();
-
-// Sweeper every 10 minutes to remove expired status stories & files
+// Sweeper every 10 minutes to remove expired status stories & files — one timer for ALL sessions
 const sweeper = setInterval(() => {
-    try {
+    forEachSession(() => {
+        loadStatusStore();
         const cutoff = Date.now() - STATUS_TTL_MS;
         let changed = false;
         for (const [id, rec] of statusStore.entries()) {
@@ -72,7 +75,7 @@ const sweeper = setInterval(() => {
             }
         }
         if (changed) scheduleSave();
-    } catch {}
+    }).catch(() => {});
 }, 10 * 60 * 1000);
 if (typeof sweeper.unref === 'function') sweeper.unref();
 
@@ -137,6 +140,7 @@ function collectStatusCandidates(payload) {
  * Capture incoming status@broadcast updates into statusStore
  */
 export async function captureStatusStory(sock, payload) {
+    loadStatusStore();
     const candidates = collectStatusCandidates(payload);
     if (!candidates.length) return;
 
@@ -211,6 +215,7 @@ function identities(jid) {
  * Get active status stories (within 24 hours) for a given target user
  */
 export function getStatusStoriesForUser(targetJid) {
+    loadStatusStore();
     const wanted = identities(targetJid);
     if (!wanted.size) return [];
 

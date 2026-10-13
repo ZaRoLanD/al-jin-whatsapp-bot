@@ -5,18 +5,17 @@
 import fs from 'fs';
 import path from 'path';
 import { readJson, writeJsonAtomic } from './state-io.js';
-import { inState, statePath } from './paths.js';
+import { inState } from './paths.js';
+import { perSession } from './context.js';
 
-const CACHE_FILE = inState('channel-cache.json');
+// Resolved on use (not at import) so every session reads and writes its own file.
+const CACHE_FILE_PATH = () => inState('channel-cache.json');
 const DEBUG = process.env.WRAITH_DEBUG === '1';
-
-// Ensure state dir exists
-statePath();
 
 // ─────────────────────────────────────────────
 //  LID ↔ PN Cache
 // ─────────────────────────────────────────────
-const LID_TO_PN_CACHE = new Map();
+const LID_TO_PN_CACHE = perSession(() => new Map());   // each session learns its own LID↔PN pairs
 
 export function cacheLidPnMapping(lid, pn) {
     if (!lid || !pn) return;
@@ -122,6 +121,7 @@ export function cacheChannelFromMessage(msg) {
     if (!jid.endsWith('@newsletter')) return;
 
     try {
+        const CACHE_FILE = CACHE_FILE_PATH();
         const cache = readJson(CACHE_FILE, {});
         if (!cache[jid]) {
             cache[jid] = { jid, name: null, firstSeen: Date.now(), lastSeen: Date.now() };
@@ -135,7 +135,7 @@ export function cacheChannelFromMessage(msg) {
 }
 
 export function getCachedChannels() {
-    return readJson(CACHE_FILE, []) === [] ? [] : Object.values(readJson(CACHE_FILE, {}));
+    return Object.values(readJson(CACHE_FILE_PATH(), {}) || {});
 }
 
 // ─────────────────────────────────────────────

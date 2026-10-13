@@ -14,6 +14,7 @@ import { isOwner, ownerJid } from '../core/identity.js';
 import { readJson, writeJsonAtomic } from '../core/state-io.js';
 import { resolveTargetUniversal } from '../core/jid-resolver.js';
 import { CONFIG } from '../config.js';
+import { sessionLocal } from '../core/context.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const STATE = path.join(here, '..', 'state', 'schedule.json');
@@ -399,12 +400,12 @@ async function sendEntry(sock, entry) {
 
 // ── Scheduler loop ──────────────────────────────────────────────────────────
 const MAX_ATTEMPTS = 3;
-let schedulerTimer = null;
+const SC = sessionLocal(() => ({ schedulerTimer: null }));   // per-session state
 
 export function startScheduler(sock) {
-  if (schedulerTimer) clearInterval(schedulerTimer);
+  if (SC().schedulerTimer) clearInterval(SC().schedulerTimer);
 
-  schedulerTimer = setInterval(async () => {
+  SC().schedulerTimer = setInterval(async () => {
     try {
       const schedules = read();
       if (schedules.length === 0) return;
@@ -458,8 +459,8 @@ export function startScheduler(sock) {
 }
 
 export function stopScheduler() {
-  if (schedulerTimer) {
-    clearInterval(schedulerTimer);
-    schedulerTimer = null;
+  if (SC().schedulerTimer) {
+    clearInterval(SC().schedulerTimer);
+    SC().schedulerTimer = null;
   }
 }

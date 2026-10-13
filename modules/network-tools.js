@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getMediaFromMsg } from './media-tools.js';
 import { chunkText } from '../lib/net.js';
+import { sessionLocal } from '../core/context.js';
 
 const TMP_DIR = () => {
   const dir = path.resolve(process.env.WRAITH_DATA_DIR || process.cwd(), 'data', 'tmp');
@@ -201,7 +202,7 @@ export async function web2imgCommand(sock, chat, msg, args) {
 }
 
 // ── .tempmail & .readmail ───────────────────────────────────────────────────
-let activeTempMailSession = null;
+const NT = sessionLocal(() => ({ activeTempMailSession: null }));   // per-session state
 
 export async function tempmailCommand(sock, chat, msg, args) {
   try {
@@ -213,7 +214,7 @@ export async function tempmailCommand(sock, chat, msg, args) {
       throw new Error('Invalid response from Guerrilla Mail server');
     }
 
-    activeTempMailSession = {
+    NT().activeTempMailSession = {
       email: data.email_addr,
       sid_token: data.sid_token,
       created: Date.now()
@@ -230,8 +231,8 @@ export async function tempmailCommand(sock, chat, msg, args) {
 export async function readmailCommand(sock, chat, msg, args) {
   try {
     let sidToken = (args || []).join(' ').trim();
-    if (!sidToken && activeTempMailSession?.sid_token) {
-      sidToken = activeTempMailSession.sid_token;
+    if (!sidToken && NT().activeTempMailSession?.sid_token) {
+      sidToken = NT().activeTempMailSession.sid_token;
     }
 
     if (!sidToken) {
@@ -242,7 +243,7 @@ export async function readmailCommand(sock, chat, msg, args) {
     if (!listRes.ok) throw new Error('Failed to connect to Guerrilla Mail server');
     const data = await listRes.json();
 
-    const emailAddr = data.email_addr || activeTempMailSession?.email || 'Active Address';
+    const emailAddr = data.email_addr || NT().activeTempMailSession?.email || 'Active Address';
 
     if (!data.list || data.list.length === 0) {
       return sock.sendMessage(chat, { text: `📬 Inbox is empty for *${emailAddr}*.` }, { quoted: msg });

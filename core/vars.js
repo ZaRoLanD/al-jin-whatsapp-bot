@@ -4,31 +4,25 @@
 // ─────────────────────────────────────────────
 import fs from 'node:fs';
 import { inState, statePath } from './paths.js';
+import { sessionLocal } from './context.js';
 
 const VARS_FILE = () => inState('vars.json');
 
-let _cache = null;
+// One variable store per session. Values are NOT copied into process.env any more: in a shared
+// process that would let one session's API key leak into another session.
+const S = sessionLocal(() => ({ cache: null }));
 
 export function loadVars() {
-    if (_cache) return _cache;
+    const st = S();
+    if (st.cache) return st.cache;
     try {
         const file = VARS_FILE();
-        if (fs.existsSync(file)) {
-            _cache = JSON.parse(fs.readFileSync(file, 'utf-8')) || {};
-            // Populate process.env with persisted variables
-            for (const [k, v] of Object.entries(_cache)) {
-                if (v !== undefined && v !== null && !process.env[k]) {
-                    process.env[k] = String(v);
-                }
-            }
-        } else {
-            _cache = {};
-        }
+        st.cache = fs.existsSync(file) ? (JSON.parse(fs.readFileSync(file, 'utf-8')) || {}) : {};
     } catch (e) {
         try { console.error('[vars] loadVars error:', e.message); } catch {}
-        _cache = {};
+        st.cache = {};
     }
-    return _cache;
+    return st.cache;
 }
 
 function saveVars(data) {
@@ -36,7 +30,7 @@ function saveVars(data) {
         const file = VARS_FILE();
         statePath();
         fs.writeFileSync(file, JSON.stringify(data, null, 2));
-        _cache = data;
+        S().cache = data;
     } catch (e) {
         try { console.error('[vars] saveVars error:', e.message); } catch {}
     }
@@ -54,7 +48,6 @@ export function setVar(key, value) {
     const store = loadVars();
     store[key] = value;
     saveVars(store);
-    process.env[key] = value;
     return true;
 }
 
@@ -64,7 +57,6 @@ export function delVar(key) {
     if (Object.prototype.hasOwnProperty.call(store, key)) {
         delete store[key];
         saveVars(store);
-        delete process.env[key];
         return true;
     }
     return false;

@@ -9,6 +9,7 @@ import { isOwner, ownerJid, digitsOf } from '../core/identity.js';
 import { stripDevice, jidType } from '../core/jid-resolver.js';
 import { inState, statePath } from '../core/paths.js';
 import { getAntibotConfig } from './group.js';
+import { sessionLocal } from '../core/context.js';
 
 const STATE = () => inState('admin.json');
 const DEBUG = process.env.WRAITH_DEBUG === '1';
@@ -138,18 +139,17 @@ export async function adminAction(sock, chat, msg, args, action) {
     }
 
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
-let targetRaw = null;
-let targetSource = null;
+const AD = sessionLocal(() => ({ targetRaw: null, targetSource: null }));   // per-session state
 
 // ── Priority 1: replied message ──
 if (ctx?.participant) {
-    targetRaw = ctx.participant;
-    targetSource = 'reply';
+    AD().targetRaw = ctx.participant;
+    AD().targetSource = 'reply';
 }
 // ── Priority 2: @mention (WhatsApp puts the real JID here) ──
 else if (Array.isArray(ctx?.mentionedJid) && ctx.mentionedJid.length > 0) {
-    targetRaw = ctx.mentionedJid[0];
-    targetSource = 'mention';
+    AD().targetRaw = ctx.mentionedJid[0];
+    AD().targetSource = 'mention';
 }
 // ── Priority 3: raw arg (number / @username / JID) ──
 else if (args?.[0]) {
@@ -158,27 +158,27 @@ else if (args?.[0]) {
     // If it looks like "@1234567890" (digits after @), treat as LID digits
     if (/^@\d{7,}$/.test(raw)) {
         const digits = raw.slice(1);
-        targetRaw = digits + '@lid';   // 👈 the key fix
-        targetSource = 'mention-digits';
+        AD().targetRaw = digits + '@lid';   // 👈 the key fix
+        AD().targetSource = 'mention-digits';
     } else {
-        targetRaw = raw;
-        targetSource = 'arg';
+        AD().targetRaw = raw;
+        AD().targetSource = 'arg';
     }
 }
 
-if (!targetRaw) {
+if (!AD().targetRaw) {
     return sock.sendMessage(chat, {
         text: `❌ No target found. Reply to a message, @mention someone, or provide a number/username/JID.`
     }, { quoted: msg });
 }
 
-if (DEBUG) console.log(`[admin] target resolved from ${targetSource}: ${targetRaw}`);
+if (DEBUG) console.log(`[admin] target resolved from ${AD().targetSource}: ${AD().targetRaw}`);
 
-    const targetJid = await resolveToPnJid(sock, targetRaw, chat);
+    const targetJid = await resolveToPnJid(sock, AD().targetRaw, chat);
 
     if (!targetJid) {
         return sock.sendMessage(chat, {
-            text: `❌ Could not resolve \`${targetRaw}\` to a phone-number JID.\n\n` +
+            text: `❌ Could not resolve \`${AD().targetRaw}\` to a phone-number JID.\n\n` +
                   `Try replying to their message, or use their full number (e.g. \`923001234567\`).`
         }, { quoted: msg });
     }
@@ -224,9 +224,9 @@ if (DEBUG) console.log(`[admin] target resolved from ${targetSource}: ${targetRa
             `*when ·* ${when}`
         ];
         if (groupName) lines.push(`*group ·* ${groupName}`);
-        if (targetSource === 'mention' || targetSource === 'mention-digits') {
+        if (AD().targetSource === 'mention' || AD().targetSource === 'mention-digits') {
             lines.push(`*via ·* @mention`);
-        } else if (targetSource === 'reply') {
+        } else if (AD().targetSource === 'reply') {
             lines.push(`*via ·* reply`);
         }
 

@@ -23,6 +23,7 @@ import {
     getBestUserJidSync, stripDevice, digitsOf,
     resolvePnToLid, resolveLidToPn
 } from '../core/jid-resolver.js';
+import { sessionLocal, perSession, registerFlusher } from '../core/context.js';
 
 const DEBUG = process.env.WRAITH_DEBUG === '1';
 const STORE_FILE = () => inState('stalk.json');
@@ -78,13 +79,11 @@ function parseWindow(text) {
 // </pure>
 
 // ── state ───────────────────────────────────────────────────────────────────
-let store = null;                       // { version, alive, settings, contacts }
-let dirty = false;
-let flushTimer = null;
-const aliases = new Map();              // jid (pn or lid) -> contact key
-const triedLids = new Set();
-const lastNotify = new Map();
-const dbg = { received: 0, matched: 0, unmatched: 0, lastEventAt: 0, lastUnmatched: '', subOk: 0, subFail: 0, lastError: '' };
+const PT = sessionLocal(() => ({ store: null, dirty: false, flushTimer: null }));   // per-session state
+const aliases = perSession(() => new Map());   // jid (pn or lid) -> contact key
+const triedLids = perSession(() => new Set());
+const lastNotify = perSession(() => new Map());
+const dbg = perSession(() => ({ received: 0, matched: 0, unmatched: 0, lastEventAt: 0, lastUnmatched: '', subOk: 0, subFail: 0, lastError: '' }));
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const tz = () => CONFIG.timezone || 'Asia/Karachi';
@@ -92,39 +91,38 @@ const fmt = (ms) => new Date(ms).toLocaleString('en-GB', { timeZone: tz() });
 const fmtT = (ms) => new Date(ms).toLocaleTimeString('en-GB', { timeZone: tz() });
 
 function load() {
-    if (store) return store;
+    if (PT().store) return PT().store;
     const raw = readJson(STORE_FILE(), null);
     const ok = raw && raw.version === 2 && raw.contacts;
-    store = {
+    PT().store = {
         version: 2,
         alive: ok ? raw.alive || 0 : 0,
         settings: { notify: false, ...(ok ? raw.settings : {}) },
         contacts: ok ? raw.contacts : {}
     };
     aliases.clear();
-    for (const [key, rec] of Object.entries(store.contacts)) {
+    for (const [key, rec] of Object.entries(PT().store.contacts)) {
         if (rec.jid) aliases.set(stripDevice(rec.jid), key);
         if (rec.lid) aliases.set(stripDevice(rec.lid), key);
     }
-    return store;
+    return PT().store;
 }
 
 function markDirty() {
-    dirty = true;
-    if (flushTimer) return;
-    flushTimer = setTimeout(flushNow, FLUSH_MS);
-    if (typeof flushTimer.unref === 'function') flushTimer.unref();
+    PT().dirty = true;
+    if (PT().flushTimer) return;
+    PT().flushTimer = setTimeout(flushNow, FLUSH_MS);
+    if (typeof PT().flushTimer.unref === 'function') PT().flushTimer.unref();
 }
 
 function flushNow() {
-    flushTimer = null;
-    if (!dirty || !store) return;
-    try { writeJsonAtomic(STORE_FILE(), store); dirty = false; } catch (e) {
+    PT().flushTimer = null;
+    if (!PT().dirty || !PT().store) return;
+    try { writeJsonAtomic(STORE_FILE(), PT().store); PT().dirty = false; } catch (e) {
         if (DEBUG) console.log('[stalk] save failed:', e.message);
     }
 }
-process.on('SIGINT', flushNow);
-process.on('SIGTERM', flushNow);
+registerFlusher(flushNow);   // written on shutdown, for every session
 
 // ── contact helpers ─────────────────────────────────────────────────────────
 function makeKey(jid) {
@@ -146,7 +144,7 @@ function findKey(jid) {
 function findByInput(input) {
     const digits = String(input || '').replace(/\D/g, '');
     if (digits.length < 5) return null;
-    for (const [key, rec] of Object.entries(store.contacts)) {
+    for (const [key, rec] of Object.entries(PT().store.contacts)) {
         if (key === digits || key.endsWith(digits)) return { key, rec };
         if (digitsOf(rec.jid).endsWith(digits)) return { key, rec };
         if (rec.lid && digitsOf(rec.lid) === digits) return { key, rec };
@@ -156,9 +154,9 @@ function findByInput(input) {
 
 function addContact(jid, lid) {
     const key = makeKey(jid);
-    let rec = store.contacts[key];
+    let rec = PT().store.contacts[key];
     if (!rec) {
-        rec = store.contacts[key] = {
+        rec = PT().store.contacts[key] = {
             jid: stripDevice(jid),
             lid: lid ? stripDevice(lid) : null,
             tracked: true,
@@ -197,7 +195,7 @@ function stateText(rec, now = Date.now()) {
 // ── recording ───────────────────────────────────────────────────────────────
 async function notifyOwner(sock, key, rec, online, sessionMs) {
     try {
-        if (!store.settings.notify) return;
+        if (!PT().store.settings.notify) return;
         const now = Date.now();
         if (now - (lastNotify.get(key) || 0) < NOTIFY_MIN_GAP_MS) return;
         lastNotify.set(key, now);
@@ -213,7 +211,7 @@ async function notifyOwner(sock, key, rec, online, sessionMs) {
 }
 
 function record(sock, key, status, now) {
-    const rec = store.contacts[key];
+    const rec = PT().store.contacts[key];
     if (!rec || !rec.tracked) return;
 
     // WhatsApp only says "unavailable" when the person is offline.
@@ -244,7 +242,7 @@ async function learnAlias(sock, jid) {
             const key = findKey(res.pn);
             if (key) {
                 addAlias(key, clean);
-                if (!store.contacts[key].lid) store.contacts[key].lid = clean;
+                if (!PT().store.contacts[key].lid) PT().store.contacts[key].lid = clean;
                 markDirty();
                 return key;
             }
@@ -255,7 +253,7 @@ async function learnAlias(sock, jid) {
 
 async function handlePresence(sock, update) {
     const { id, presences } = update || {};
-    if (!presences || !store) return;
+    if (!presences || !PT().store) return;
     dbg.received++;
     const now = Date.now();
     for (const [rawJid, p] of Object.entries(presences)) {
@@ -280,8 +278,8 @@ async function subscribeOne(sock, rec) {
 }
 
 async function subscribeAll(sock) {
-    if (!store) return;
-    for (const rec of Object.values(store.contacts)) {
+    if (!PT().store) return;
+    for (const rec of Object.values(PT().store.contacts)) {
         if (!rec.tracked) continue;
         await subscribeOne(sock, rec);
         await sleep(500);
@@ -291,8 +289,8 @@ async function subscribeAll(sock) {
 // When the bot was offline we cannot know what happened: close open sessions
 // at the last moment the bot was known to be alive.
 function markGap(now) {
-    const t = Math.min(now, store.alive || now);
-    for (const rec of Object.values(store.contacts)) {
+    const t = Math.min(now, PT().store.alive || now);
+    for (const rec of Object.values(PT().store.contacts)) {
         const last = rec.events[rec.events.length - 1];
         if (last && last[1] === ON) {
             rec.events.push([Math.max(t, last[0]), GAP]);
@@ -309,7 +307,7 @@ export function startStalk(sock) {
     try {
         load();
         markGap(Date.now());
-        store.alive = Date.now();
+        PT().store.alive = Date.now();
         markDirty();
 
         sock.ev.on('presence.update', (u) => {
@@ -318,13 +316,13 @@ export function startStalk(sock) {
 
         const first = setTimeout(() => subscribeAll(sock).catch(() => {}), 4000);
         const resub = setInterval(() => subscribeAll(sock).catch(() => {}), RESUB_MS);
-        const alive = setInterval(() => { store.alive = Date.now(); markDirty(); }, ALIVE_MS);
+        const alive = setInterval(() => { PT().store.alive = Date.now(); markDirty(); }, ALIVE_MS);
         for (const t of [first, resub, alive]) t.unref?.();
 
         sock.ev.on('connection.update', ({ connection }) => {
             if (connection === 'close') {
                 clearTimeout(first); clearInterval(resub); clearInterval(alive);
-                if (store) { store.alive = Date.now(); flushNow(); }
+                if (PT().store) { PT().store.alive = Date.now(); flushNow(); }
             }
         });
     } catch (e) {
@@ -395,7 +393,7 @@ async function cmdTrack(sock, chat, msg, args, say) {
     }
 
     await sleep(1500);
-    const cur = store.contacts[key];
+    const cur = PT().store.contacts[key];
     const lines = [
         `👁️ *stalk* · \`${label(cur)}\``, '',
         'Tracking is ON. Every online/offline change is logged.',
@@ -409,12 +407,12 @@ async function cmdTrack(sock, chat, msg, args, say) {
 }
 
 async function cmdList(say) {
-    const keys = Object.keys(store.contacts);
+    const keys = Object.keys(PT().store.contacts);
     if (!keys.length) return say('👁️ Nobody is tracked yet. Use `.stalk <number>`.');
     const now = Date.now();
     const lines = [`👁️ *tracked contacts* · ${keys.length}`, ''];
     for (const key of keys.slice(0, 30)) {
-        const rec = store.contacts[key];
+        const rec = PT().store.contacts[key];
         const st = windowStats(rec, now - 86_400_000, now);
         lines.push(`• \`${label(rec)}\`${rec.tracked ? '' : ' · ⏸️ paused'}`);
         lines.push(`   ${stateText(rec, now)}`);
@@ -428,7 +426,7 @@ async function cmdStop(say, input, remove) {
     const hit = findByInput(input);
     if (!hit) return say('❌ Usage: `.stalk stop <number>` (must be a tracked contact).');
     if (remove) {
-        delete store.contacts[hit.key];
+        delete PT().store.contacts[hit.key];
         for (const [j, k] of aliases) if (k === hit.key) aliases.delete(j);
     } else {
         hit.rec.tracked = false;
@@ -466,11 +464,11 @@ async function cmdReport(say, rest) {
     const wLabel = dur(windowMs);
 
     if (!input) {
-        const keys = Object.keys(store.contacts);
+        const keys = Object.keys(PT().store.contacts);
         if (!keys.length) return say('👁️ Nobody is tracked yet.');
         const lines = [`📈 *stalk report* · last ${wLabel}`, ''];
         for (const key of keys.slice(0, 30)) {
-            const rec = store.contacts[key];
+            const rec = PT().store.contacts[key];
             const st = windowStats(rec, from, now);
             const lastOn = st.sessions[st.sessions.length - 1];
             lines.push(`• \`${label(rec)}\` · ${dur(st.total)} online · ${st.sessions.length} sessions`);
@@ -509,16 +507,16 @@ async function cmdReport(say, rest) {
 async function cmdNotify(say, value) {
     const v = String(value || '').toLowerCase();
     if (v !== 'on' && v !== 'off') {
-        return say(`🔔 Live alerts are *${store.settings.notify ? 'ON' : 'OFF'}*. Use \`.stalk notify on|off\`.`);
+        return say(`🔔 Live alerts are *${PT().store.settings.notify ? 'ON' : 'OFF'}*. Use \`.stalk notify on|off\`.`);
     }
-    store.settings.notify = v === 'on';
+    PT().store.settings.notify = v === 'on';
     markDirty();
-    return say(store.settings.notify ? '🔔 Live alerts ON — you get a message every time a tracked contact goes online/offline.' : '🔕 Live alerts OFF.');
+    return say(PT().store.settings.notify ? '🔔 Live alerts ON — you get a message every time a tracked contact goes online/offline.' : '🔕 Live alerts OFF.');
 }
 
 async function cmdDebug(say) {
     const now = Date.now();
-    const all = Object.values(store.contacts);
+    const all = Object.values(PT().store.contacts);
     const presenceCfg = readJson(inState('presence.json'), {});
     const lines = [
         '🧪 *stalk debug*', '',
@@ -526,7 +524,7 @@ async function cmdDebug(say) {
         `• presence events received · ${dbg.received} (matched ${dbg.matched} · unmatched ${dbg.unmatched})`,
         `• last logged change · ${dbg.lastEventAt ? `${dur(now - dbg.lastEventAt)} ago` : 'none since start'}`,
         `• subscribe ok/failed · ${dbg.subOk}/${dbg.subFail}${dbg.lastError ? `\n   last error: ${dbg.lastError}` : ''}`,
-        `• live alerts · ${store.settings.notify ? 'ON' : 'OFF'}`,
+        `• live alerts · ${PT().store.settings.notify ? 'ON' : 'OFF'}`,
         `• bot Always Online · ${presenceCfg.alwaysOnline ? 'ON' : 'OFF'}`
     ];
     if (dbg.lastUnmatched) lines.push(`• last unmatched JID · ${dbg.lastUnmatched}`);

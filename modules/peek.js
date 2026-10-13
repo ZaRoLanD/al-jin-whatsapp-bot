@@ -12,6 +12,7 @@ import { getBestUserJid } from '../core/jid-resolver.js';
 import { sendInteractive, createQuickReply } from '../lib/buttons.js';
 import { getPrefix } from '../core/settings.js';
 import { inState, statePath } from '../core/paths.js';
+import { perSession, forEachSession } from '../core/context.js';
 
 const STATE = () => inState('peek.json');
 
@@ -59,14 +60,14 @@ function write(o) {
 //  Dedupe — prevents the same view-once being
 //  captured twice when multiple people reply to it.
 // ─────────────────────────────────────────────
-const seenQuoted = new Map(); // stanzaId → timestamp
+const seenQuoted = perSession(() => new Map()); // stanzaId → timestamp (one per session)
 
-setInterval(() => {
+setInterval(() => forEachSession(() => {
     const cutoff = Date.now() - 10 * 60 * 1000;
     for (const [id, ts] of seenQuoted.entries()) {
         if (ts < cutoff) seenQuoted.delete(id);
     }
-}, 60 * 1000);
+}), 60 * 1000).unref?.();
 
 // ─────────────────────────────────────────────
 //  Helper — extract contextInfo from any message node

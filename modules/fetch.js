@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { currentSession, currentSessionId } from '../core/context.js';
 import path from 'node:path';
 import zlib from 'node:zlib';
 
@@ -148,8 +149,8 @@ function resolveSessionPaths(sessionId) {
   }
 
   // Check if current process WRAITH_DATA_DIR matches session or active environment
-  if (process.env.WRAITH_SESSION_ID === sessionId && process.env.WRAITH_DATA_DIR) {
-    const activeDataDir = process.env.WRAITH_DATA_DIR;
+  if (currentSessionId() === sessionId && currentSession().dataDir) {
+    const activeDataDir = currentSession().dataDir;
     const activeVault = path.join(activeDataDir, 'vault');
     const activeLogs = path.join(activeDataDir, 'logs');
 

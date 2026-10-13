@@ -11,6 +11,7 @@
 //    .reactall emoji 😀 🔥 ...        custom emoji set  (.reactall emoji reset)
 // ---------------------------------------------
 import { store, safe, reply, prefix, pick, isGroup } from '../lib/x.js';
+import { perSession } from '../core/context.js';
 
 const DEFAULT_EMOJIS = ['👍', '❤️', '😂', '🔥', '😮', '🙏', '✨', '💯', '😎', '🥰', '👏', '🎉', '🤝', '😍', '💪', '🌟'];
 const cfgStore = () => store('reactall', {});
@@ -35,7 +36,7 @@ const toJid = (arg, chat) => {
 };
 
 // ── message hook (called from x-hooks.js for every message) ───────────
-const lastReact = new Map();
+const lastReact = perSession(() => new Map());
 export async function globalReact(sock, chat, msg, text) {
     const c = cfg();
     if (!c.on || msg.key.fromMe || !msg.key.id) return;

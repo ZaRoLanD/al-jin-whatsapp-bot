@@ -19,6 +19,8 @@ import { getPrefix } from '../core/settings.js';
 import {
     ACTIONS, TKICK_DEFAULT, parseDuration, fmtMs, isForwarded, addStrike, describeAction, actionSub, matchMute,
 } from '../lib/guard-core.js';
+import { perSession } from '../core/context.js';
+import { sessionLocal } from '../core/context.js';
 
 const P = () => getPrefix();
 const onOff = (v) => (v ? 'on ✅' : 'off ⭕');
@@ -40,18 +42,17 @@ function digitsFor(jid) {
 }
 
 // ── temp-kick returns ──────────────────────────
-let ticker = null;
-let sockRef = null;
+const XG = sessionLocal(() => ({ ticker: null, sockRef: null }));   // per-session state
 
 export function ensureTicker(sock) {
-    sockRef = sock;
-    if (ticker) return;
-    ticker = setInterval(() => { tickReturns().catch(() => {}); }, 30_000);
-    ticker.unref?.();
+    XG().sockRef = sock;
+    if (XG().ticker) return;
+    XG().ticker = setInterval(() => { tickReturns().catch(() => {}); }, 30_000);
+    XG().ticker.unref?.();
 }
 
 async function tickReturns() {
-    if (!sockRef) return;
+    if (!XG().sockRef) return;
     const s = guardStore();
     const now = Date.now();
     const due = s.data.tkicks.filter((t) => t.until <= now);
@@ -60,12 +61,12 @@ async function tickReturns() {
     s.save();
     for (const t of due) {
         try {
-            const res = await sockRef.groupParticipantsUpdate(t.chat, [t.jid], 'add');
+            const res = await XG().sockRef.groupParticipantsUpdate(t.chat, [t.jid], 'add');
             const status = String(res?.[0]?.status ?? '200');
             if (status !== '200') throw new Error(status);
-            await sockRef.sendMessage(t.chat, { text: `⏰ ${tag(t.jid)}'s timeout is over — welcome back.`, mentions: [t.jid] });
+            await XG().sockRef.sendMessage(t.chat, { text: `⏰ ${tag(t.jid)}'s timeout is over — welcome back.`, mentions: [t.jid] });
         } catch {
-            try { await sockRef.sendMessage(t.chat, { text: `⏰ ${tag(t.jid)}'s timeout is over, but I couldn't add them back (privacy settings). They can rejoin with the group link.`, mentions: [t.jid] }); } catch { /* ignore */ }
+            try { await XG().sockRef.sendMessage(t.chat, { text: `⏰ ${tag(t.jid)}'s timeout is over, but I couldn't add them back (privacy settings). They can rejoin with the group link.`, mentions: [t.jid] }); } catch { /* ignore */ }
         }
     }
 }
@@ -127,7 +128,7 @@ export async function enforce(sock, chat, msg, node, who, reason, opts = {}) {
 }
 
 // ── dnd / mute helpers ─────────────────────────
-const dndSeen = new Map();
+const dndSeen = perSession(() => new Map());
 const throttled = (key, ms) => {
     const now = Date.now();
     if (now - (dndSeen.get(key) || 0) < ms) return true;
