@@ -47,7 +47,7 @@ Also set Windows **Settings → System → Power → Screen and sleep** to **Nev
 2. Open Termux, paste this **one line**, press Enter:
 
 ```bash
-pkg install -y curl && curl -fsSL -o aljin.sh https://raw.githubusercontent.com/themalik-g/al-jin-whatsapp-bot/main/aljin.sh && bash aljin.sh
+apt update && apt full-upgrade -y && apt install -y --reinstall openssl libcurl curl && curl -fsSL -o aljin.sh https://raw.githubusercontent.com/themalik-g/al-jin-whatsapp-bot/main/aljin.sh && bash aljin.sh
 ```
 
 3. Wait while it sets up (several minutes on a phone), type your number, then enter the pairing code in WhatsApp (same steps as Windows, step 7).
