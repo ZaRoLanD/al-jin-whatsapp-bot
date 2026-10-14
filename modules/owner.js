@@ -526,9 +526,25 @@ export async function setsessionCommand(sock, chat, msg, args) {
     try {
         const apn = await import('awesome-phonenumber');
         const parsePhoneNumber = apn.parsePhoneNumber || apn.default;
-        const ctx = msg.message?.extendedTextMessage?.contextInfo;
-        const quoted = ctx?.quotedMessage;
-        const doc = quoted?.documentMessage || quoted?.documentWithCaptionMessage?.message?.documentMessage;
+        // Unwrap wrapper layers (ephemeral / view-once / edited / caption wrappers).
+        const WRAPS = ['ephemeralMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension',
+            'documentWithCaptionMessage', 'editedMessage', 'deviceSentMessage'];
+        const unwrap = (m) => {
+            for (let i = 0; i < 6 && m; i++) {
+                const k = WRAPS.find((w) => m[w]?.message);
+                if (!k) break;
+                m = m[k].message;
+            }
+            return m;
+        };
+        const inner = unwrap(msg.message) || {};
+        let ctx = null;
+        for (const v of Object.values(inner)) {
+            if (v && typeof v === 'object' && v.contextInfo?.quotedMessage) { ctx = v.contextInfo; break; }
+        }
+        const quoted = unwrap(ctx?.quotedMessage);
+        const doc = quoted?.documentMessage
+            || Object.values(quoted || {}).find((v) => v && typeof v === 'object' && v.mimetype && (v.fileName || v.mediaKey) && /json|text|octet/i.test(v.mimetype + (v.fileName || '')));
 
         const rawNumber = args?.[0]?.replace(/\D/g, '');
         if (!rawNumber) {
@@ -536,7 +552,7 @@ export async function setsessionCommand(sock, chat, msg, args) {
         }
 
         if (!doc) {
-            return sock.sendMessage(chat, { text: '❌ Reply to a `creds.json` file document with `.setsession <owner_number>`.' }, { quoted: msg });
+            return sock.sendMessage(chat, { text: '❌ Reply to a `creds.json` file document with `.setsession <owner_number>`.' + (quoted ? `\n(debug: quoted type = ${Object.keys(quoted).join(', ')})` : '\n(debug: no quoted message received)') }, { quoted: msg });
         }
 
         const fileName = doc.fileName || '';
