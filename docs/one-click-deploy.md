@@ -47,7 +47,10 @@ Also set Windows **Settings → System → Power → Screen and sleep** to **Nev
 2. Open Termux, paste this **one line**, press Enter:
 
 ```bash
-apt update && apt full-upgrade -y && apt install -y --reinstall openssl libcurl curl && curl -fsSL -o aljin.sh https://raw.githubusercontent.com/themalik-g/al-jin-whatsapp-bot/main/aljin.sh && bash aljin.sh
+apt update && apt full-upgrade -y && apt install -y --reinstall openssl libcurl curl ffmpeg && export npm_config_platform=linux npm_config_arch=arm64 && rm -rf ~/Al-Jin/wraith/node_modules ~/Al-Jin/wraith/package-lock.json && curl -fsSL -o aljin.sh https://raw.githubusercontent.com/themalik-g/al-jin-whatsapp-bot/main/aljin.sh && (cd ~/Al-Jin/wraith && npm install --ignore-scripts 2>/dev/null; cat > node_modules/ffprobe-static/index.js <<'EOF'
+module.exports = { path: '/data/data/com.termux/files/usr/bin/ffprobe', version: 'termux-system' };
+EOF
+ln -sf $PREFIX/bin/ffmpeg node_modules/ffmpeg-static/ffmpeg 2>/dev/null) ; cd ~ && bash aljin.sh
 ```
 
 3. Wait while it sets up (several minutes on a phone), type your number, then enter the pairing code in WhatsApp (same steps as Windows, step 7).
