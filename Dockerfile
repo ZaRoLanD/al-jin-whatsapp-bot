@@ -25,6 +25,10 @@ RUN mkdir -p /app/instances
 # The WhatsApp login (session), settings and state live in instances/ — mount it as a volume
 VOLUME ["/app/instances"]
 
+# Optional: connect with a Session ID from the Jin pairing site instead of pairing again
+ENV SESSION_ID=""
+ENV SESSION_API=""
+
 # Start through the launcher: it resumes linked sessions, or pairs with
 #   docker run ... al-jin node index.js --phone=923001234567
 CMD ["node", "index.js"]

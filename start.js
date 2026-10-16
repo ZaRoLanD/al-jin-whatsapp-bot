@@ -61,6 +61,7 @@ import { getPollMessage, handlePollUpdates, handlePollMessage, setPollRunner } f
 import { onMemoryPressure } from './core/limiter.js';
 import { warmOwnIdentity, baileysPatchStatus } from './lib/own-warmup.js';
 import { requestPairCode, pairCodeCandidates } from './lib/pair-codes.js';
+import { restoreSession, wrapSaveCreds } from './lib/session-id.js';
 import { installNativeButtons } from './lib/native-buttons.js';
 
 installTimerTracking();
@@ -300,9 +301,12 @@ async function ignite(rt) {
   const STATE_DIR = statePath();
 
   try {
+    // SESSION_ID (Cloudflare Workers KV): put the saved login in place BEFORE Baileys reads the folder
+    if (rt.id === 'main') await restoreSession(AUTH_DIR, (m) => console.log(tag, yellow(m)));
     // .fixkeys / repair-sessions.flag → drop stale signal sessions BEFORE Baileys loads the keys
     repairIfRequested(AUTH_DIR, STATE_DIR, (m) => console.log(tag, yellow(m)));
-    const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+    const { state, saveCreds: rawSaveCreds } = await useMultiFileAuthState(AUTH_DIR);
+    const saveCreds = rt.id === 'main' ? wrapSaveCreds(rawSaveCreds, AUTH_DIR, (m) => console.log(tag, grey(m))) : rawSaveCreds;
     if (rt.stopped) { rt.isStarting = false; return; }
     rt.saveCreds = saveCreds;
     if (!rt.patchReported) {

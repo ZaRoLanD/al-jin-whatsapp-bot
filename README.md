@@ -6,6 +6,11 @@
 
 # Al-Jin: Free Open-Source WhatsApp Bot (Baileys v7, Pairing Code, Native Buttons)
 
+<p align="center">
+  <a href="https://YOUR-PAIRING-SITE-URL"><img src="assets/get-session-id.svg" alt="Get pairing code" width="520"></a>
+</p>
+
+
 **Self-hosted WhatsApp Multi-Device bot on original Baileys v7 · nearly 400 commands · deploys with a single file**
 
 Anti-delete · anti-edit detection · view-once auto-send to DM · custom pairing code · native buttons · YouTube, movie, series and book downloaders · scheduling · group management · multi-session · one-command KataBump deploy · Quran and Islamic search
@@ -92,6 +97,16 @@ Many WhatsApp bots need a custom Baileys fork or extra plugins for the good part
 ## Deployment
 
 Every method ends the same way: the bot prints an **8-character pairing code**, you enter it in WhatsApp, and you are online. Your session is saved, so later restarts need no new code.
+
+### 🔑 Deploy with a Session ID (no pairing on the server)
+
+Link once on the Jin pairing site, get a `JIN_...` Session ID, and any host can start the bot with it. No pairing code is asked again.
+
+<p align="center">
+  <a href="https://YOUR-PAIRING-SITE-URL"><img src="assets/get-session-id.svg" alt="Get pairing code" width="520"></a>
+</p>
+
+Set `SESSION_ID` (and `SESSION_API`) as a panel variable, in `.env`, at the top of `index.js`, or with `node index.js --session-id=JIN_...`. The launchers you download from the pairing site already contain both. Guide: [Session ID](docs/session-id.md).
 
 ### The universal method (VPS, panel, Windows, macOS, Linux; Bun also supported)
 
