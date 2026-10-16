@@ -7,7 +7,7 @@
 # Al-Jin: Free Open-Source WhatsApp Bot (Baileys v7, Pairing Code, Native Buttons)
 
 <p align="center">
-  <a href="https://YOUR-PAIRING-SITE-URL"><img src="assets/get-session-id.svg" alt="Get pairing code" width="520"></a>
+  <a href="https://tiles-talk-collection-cassette.trycloudflare.com/"><img src="assets/get-session-id.svg" alt="Get pairing code" width="520"></a>
 </p>
 
 
