@@ -35,7 +35,7 @@ import { runOutsideSession } from './context.js';
 // main data folder no matter which session's owner typed .cpulimit / .ramlimit.
 const getSetting = (k) => runOutsideSession(() => sessionGetSetting(k));
 const setSetting = (k, v) => runOutsideSession(() => sessionSetSetting(k, v));
-import { cgCpuCores } from '../lib/sysinfo.js';
+import { cgCpuCores, containerMemory } from '../lib/sysinfo.js';
 
 const HAS_PROC = process.platform === 'linux' && fs.existsSync('/proc/self/stat');
 const PAGE = 4096;
@@ -524,8 +524,18 @@ export function limiterStatus() {
     }
     if (cpu.limit > 0) kick();
 
-    let mb = Number(getSetting('ramlimitMB')) || 0;
+    const savedRam = getSetting('ramlimitMB');
+    let mb = Number(savedRam) || 0;
     if (!mb) { const e = parseRamLimit(envNum('AL_JIN_RAM_LIMIT_MB', 'WRAITH_RAM_LIMIT_MB')); if (e) mb = e; }
+    // Small box (≤ ~1 GB) and nobody chose anything → guard automatically, so a runaway ffmpeg / yt-dlp
+    // job is killed (and the bot trims its caches) BEFORE the kernel OOM-killer takes the whole bot down.
+    // ~86 % of the container minus ~40 MB for the launcher process. `.ramlimit off` (or AL_JIN_RAM_AUTO=0) disables it.
+    if (!mb && (savedRam === undefined || savedRam === null) && envNum('AL_JIN_RAM_AUTO') !== '0') {
+      try {
+        const totalMB = Math.floor((containerMemory()?.limit || 0) / 1048576);
+        if (totalMB >= 256 && totalMB <= 1100) mb = Math.max(192, Math.floor(totalMB * 0.86) - 40);
+      } catch { /* leave off */ }
+    }
     const restart = getSetting('ramlimitRestart');
     ram.restart = restart === 1 || restart === true || envNum('AL_JIN_RAM_RESTART', 'WRAITH_RAM_RESTART') === '1';
     if (mb > 0) {
