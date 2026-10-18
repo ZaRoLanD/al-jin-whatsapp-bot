@@ -52,6 +52,7 @@ const BOT = [
     ['save', '💾 Save Message', 'Sends the replied message/media/status to your own chat.', ['Reply with .save'], true],
     ['del', '🗑️ Delete Message', 'Deletes the replied message (admins in groups, owner elsewhere). Alias: delete.', ['Reply with .del']],
     ['ison', '📱 On WhatsApp?', 'Checks whether numbers are registered on WhatsApp.', ['.ison <number> [more…]']],
+    ['getpn', '📱 Reveal Phone Number', 'Reveals real phone number behind a LID or username.', ['.getpn @user'], true],
 ];
 const FUN = [
     ['8ball', '🎱 Magic 8-Ball', 'Answers a yes/no question.', ['.8ball <question>']],
