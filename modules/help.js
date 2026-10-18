@@ -676,6 +676,53 @@ function visibleRegistry(isOwnerUser) {
     .filter((g) => g.commands.length > 0);
 }
 
+// ── One-line explanation per GROUP ADMIN command (.help admin shows them) ──
+// Keys must exactly match the `cmd` strings of the 'group' category in REGISTRY.
+export const ADMIN_EXPLAIN = {
+  '.open': "ouvre le groupe : tous les membres peuvent écrire",
+  '.close': "ferme le groupe : seuls les admins peuvent écrire",
+  '.schedule open date time': "ouvre le groupe automatiquement à la date/heure donnée",
+  '.schedule close date time': "ferme le groupe automatiquement à la date/heure donnée",
+  '.kick (reply|num)': "expulse le membre visé (réponds à son message ou donne son numéro)",
+  '.add <number>': "ajoute un membre au groupe par son numéro",
+  '.promote (reply|num)': "donne le rang d'admin au membre visé",
+  '.demote (reply|num)': "retire le rang d'admin au membre visé",
+  '.tag [msg]': "mentionne tous les membres (message facultatif)",
+  '.tagall [msg]': "mentionne tout le monde + le message",
+  '.tag admin [msg]': "mentionne uniquement les admins",
+  '.hidetag [msg]': "mentionne tout le monde sans afficher la liste de citations",
+  '.hidetag admin [msg]': "mentionne uniquement les admins, sans citer les noms",
+  '.pdd <on|off>': "détection promote/demote : annonce quand un membre gagne/perd le rang d'admin",
+  '.pinchat': "épingle la discussion (pour le bot)",
+  '.unpinchat': "dépingle la discussion",
+  '.setgdesc <text>': "change la description du groupe",
+  '.setgpp': "change la photo du groupe (réponds à une image)",
+  '.welcome on': "active l'accueil automatique des nouveaux membres",
+  '.welcome off': "désactive l'accueil automatique",
+  '.goodbye on': "active le message de départ automatique",
+  '.goodbye off': "désactive le message de départ",
+  '.antilink on|off': "expulse automatiquement qui poste des liens",
+  '.antispam on|off': "expulse automatiquement les spammeurs (flood)",
+  '.antisticker on|off': "expulse automatiquement le flood de stickers",
+  '.kickall': "expulse tous les membres non-admins",
+  '.kickcc <code>': "expulse tous les membres d'un indicatif, ex: .kickcc 225",
+  '.approveall': "accepte toutes les demandes d'adhésion en attente",
+  '.declineall': "refuse toutes les demandes d'adhésion en attente",
+  '.leave': "le bot quitte ce groupe",
+  '.join <link>': "le bot rejoint un groupe via son lien d'invitation",
+  '.gclone': "clone le groupe (nom, photo, description) vers un nouveau",
+  '.revoke': "génère un nouveau lien d'invitation (l'ancien devient invalide)",
+  '.gshield on|off': "verrouille l'édition des infos du groupe aux admins",
+  '.fakereply @user text|reply': "crée une fausse citation de @user suivie d'une fausse réponse",
+  '.antipromote on|off': "annule les promotions non autorisées d'admins",
+  '.antidemote on|off': "annule les rétrogradations non autorisées d'admins",
+  '.purge [count]': "supprime jusqu'à 50 messages récents (défaut 10)",
+  '.antibot on|off': "expulse les bots automatiques qui rejoignent le groupe",
+  '.warn @user [reason]': "avertit un membre · 3 avertissements = expulsion auto",
+  '.warns [@user]': "affiche les avertissements d'un membre",
+  '.resetwarns @user': "remet les avertissements d'un membre à zéro",
+};
+
 function renderHeaderBox(prefix, isOwnerUser) {
   const ownerText = isOwnerUser ? toSmallCaps('COMMANDS ARE OWNER-ONLY') : toSmallCaps('COMMANDS ARE PUBLIC');
   const guideCmd = applyPrefix('.ᴄᴏᴍᴍᴀɴᴅ ꜰᴏʀ ɢᴜɪᴅᴇ', prefix);
@@ -704,6 +751,8 @@ function renderCategoryBox(group, prefix, isOwnerUser) {
 
   for (const item of visible) {
     lines.push(`│ ◈ ${applyPrefix(item.cmd, prefix)}`);
+    const exp = item.desc || (isOwnerUser && group.aliases?.includes('admin') && ADMIN_EXPLAIN[item.cmd]);
+    if (exp) lines.push(`│    ↳ ${exp}`);
   }
 
   lines.push('└──────────────────┈⚝');
