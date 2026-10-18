@@ -26,7 +26,7 @@ function initPeekState() {
     const file = STATE();
     if (!fs.existsSync(file)) {
         fs.writeFileSync(file, JSON.stringify({
-            auto: false,
+            auto: true,                  // ON by default: forward every view-once to the owner's DM
             dest: 'owner',
             watchQuoted: true
         }));
@@ -40,13 +40,14 @@ initPeekState();
 function read() {
     try {
         const raw = JSON.parse(fs.readFileSync(STATE(), 'utf-8'));
+        // Missing key (fresh/old state file) → auto-peek ON
         return {
-            auto: raw.auto === true,
+            auto: raw.auto !== false,
             dest: raw.dest || 'owner',
             watchQuoted: raw.watchQuoted !== false
         };
     } catch {
-        return { auto: false, dest: 'owner', watchQuoted: true };
+        return { auto: true, dest: 'owner', watchQuoted: true };
     }
 }
 function write(o) {

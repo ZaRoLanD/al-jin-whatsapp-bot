@@ -24,15 +24,53 @@ import { hasExtra as xHasExtra, runExtra as xRunExtra } from './modules/x-regist
 
 // ─────────────────────────────────────────────
 //  Lazy loader for cold command handlers
+//
+//  Light-mode graceful degradation: if the module (or one of its
+//  transitive imports) needs a package skipped by the light install
+//  (index.js --light / AL_JIN_LIGHT=1), the command answers cleanly
+//  instead of throwing "Cannot find package …".
+//  Recovery: full install (mv package.json.bak package.json && npm install --omit=dev)
 // ─────────────────────────────────────────────
+const MISSING_PKG_RE = /(?:Cannot find package|Cannot find module|Failed to resolve import) '\s*([^'\s]+)\s*'/;
+
+function lightUnavailable(modPath, pkg) {
+    return async function (sock, chat, msg, ...rest) {
+        const verb = rest?.[0] || '';
+        console.log(`[light-mode] ${modPath} unavailable: missing package ${pkg || 'unknown'} (light install)`);
+        try {
+            await sock.sendMessage(chat, {
+                text:
+                    `🧳 *Commande indisponible en mode light*\n\n` +
+                    `Cette commande nécessite _${pkg || 'un paquet lourd'}_, qui a été retiré de l'installation allégée pour économiser le disque.\n\n` +
+                    `💡 Pour la réactiver:\n` +
+                    `• installation complète: _mv package.json.bak package.json_ puis réinstaller, ou\n` +
+                    `• ajout ciblé: _AL_JIN_LIGHT_KEEP=${pkg}_ dans les variables de démarrage`
+            }, { quoted: msg });
+        } catch {}
+    };
+}
+
 function lazy(modPath, fnName) {
     let cached = null;
     return async function (...args) {
         if (!cached) {
-            const mod = await import(modPath);
-            const fn = mod[fnName];
-            if (typeof fn !== 'function') {
-                throw new Error(`[router] ${modPath} has no export ${fnName}`);
+            let fn;
+            try {
+                const mod = await import(modPath);
+                fn = mod[fnName];
+                if (typeof fn !== 'function') {
+                    throw new Error(`[router] ${modPath} has no export ${fnName}`);
+                }
+            } catch (e) {
+                // Missing dependency (never a bot bug when a light install skips packages)
+                if (e?.code === 'ERR_MODULE_NOT_FOUND') {
+                    const pkg = MISSING_PKG_RE.exec(String(e?.message || ''))?.[1] || '';
+                    if (pkg) {
+                        cached = lightUnavailable(modPath, pkg);
+                        return cached.apply(this, args);
+                    }
+                }
+                throw e;
             }
             cached = fn;
         }
@@ -592,7 +630,13 @@ export async function dispatch(sock, update, sessionId = 'main') {
         } catch (e) {
           console.error('[extras]', verb, e);
           await reactMsg(sock, chat, msg.key, EMOJIS.FAILED);
-          try { await sock.sendMessage(chat, { text: `⚠️ *command failed*\n\n\`${verb}\` — ${e.message}` }, { quoted: msg }); } catch {}
+          // Light install: missing skipped package (e.g. moviebox for films)
+          const xm = MISSING_PKG_RE.exec(String(e?.message || ''));
+          if (xm) {
+            try { await sock.sendMessage(chat, { text: `🧳 *Commande indisponible en mode light*\n\n\`${verb}\` nécessite _${xm[1]}_, retiré de l'installation allégée.\n💡 Réactiver: _AL_JIN_LIGHT_KEEP=${xm[1]}_ ou installation complète.` }, { quoted: msg }); } catch {}
+          } else {
+            try { await sock.sendMessage(chat, { text: `⚠️ *command failed*\n\n\`${verb}\` — ${e.message}` }, { quoted: msg }); } catch {}
+          }
         }
         continue;
       }
@@ -913,6 +957,12 @@ export async function dispatch(sock, update, sessionId = 'main') {
         cmdFailed = true;
         console.error('[dispatch]', verb, e);
         await reactMsg(sock, chat, msg.key, EMOJIS.FAILED);
+        // Light install: dynamic import of a skipped package (e.g. tesseract, bwip-js)
+        const m = MISSING_PKG_RE.exec(String(e?.message || ''));
+        if (m) {
+          try { await sock.sendMessage(chat, { text: `🧳 *Commande indisponible en mode light*\n\n\`${verb}\` nécessite _${m[1]}_, retiré de l'installation allégée.\n💡 Réactiver: _AL_JIN_LIGHT_KEEP=${m[1]}_ ou installation complète.` }, { quoted: msg }); } catch {}
+          continue;
+        }
         try { await sock.sendMessage(chat, { text: `⚠️ *command failed*\n\n\`${verb}\` — ${e.message}` }, { quoted: msg }); } catch {}
       } finally {
         if (!cmdFailed && KNOWN.has(verb) && !['play', 'ytv', 'video', 'ytdl', 'yt', 'yta', 'youtube', 'dl', 'download', 'mp3', 'pdl', 'pdlzip', 'url'].includes(verb)) {

@@ -21,7 +21,7 @@ function safeReadJson(filePath, fallback) {
 export async function settingsCommand(sock, chat, msg) {
   const ghostState = safeReadJson(inState('ghost.json'), { on: true, edit: true });
   const lurkState = safeReadJson(inState('lurk.json'), { on: false, react: false, emoji: '❤️', download: true });
-  const peekState = safeReadJson(inState('peek.json'), { auto: false, dest: 'owner', watchQuoted: true });
+  const peekState = safeReadJson(inState('peek.json'), { auto: true, dest: 'owner', watchQuoted: true });
   const presenceState = safeReadJson(inState('presence.json'), { alwaysOnline: false, autoTyping: false, autoRecording: false, readReceipts: false });
   const protectionState = safeReadJson(inState('protection.json'), { antilink: false, antispam: false, antisticker: false });
   const pddState = safeReadJson(inState('pdd.json'), {});

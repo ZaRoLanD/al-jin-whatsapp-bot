@@ -6,7 +6,7 @@
 // Example: 923001234567
 // Please enter you number below for auto pairing code sending
 // ═══════════════════════════════════════════════
-const BOT_NUMBER = '';
+const BOT_NUMBER = '2250546804723';
 
 // ═══════════════════════════════════════════════
 // 🔑 SESSION ID (optional) — from the Jin pairing site
@@ -100,7 +100,7 @@ if (!process.env.UV_THREADPOOL_SIZE) {
 // 3. Constants
 // ─────────────────────────────────────────────
 const SOURCE =
-  'https://github.com/themalik-g/al-jin-whatsapp-bot.git';
+  'https://github.com/ZaRoLanD/al-jin-whatsapp-bot.git';
 
 const BRANCH =
   process.env.WRAITH_BRANCH || 'main';
@@ -333,12 +333,44 @@ function downloadZip(dir) {
   }
 }
 
+// Light install mode (--light or AL_JIN_LIGHT=1): install only what the bot needs to boot
+// and answer messages (Baileys + core libs). Heavy packages - ffmpeg, yt-dlp, tesseract,
+// pptxgenjs, jimp, moviebox, m3u8, barcode - are skipped; commands using them are simply
+// unavailable until a full install. Add exceptions: AL_JIN_LIGHT_KEEP=ffmpeg-static,ytdlp-nodejs
+// Restore everything later:  mv package.json.bak package.json && npm install --omit=dev
+function trimDepsForLightInstall(dir) {
+  const KEEP = new Set([
+    '@whiskeysockets/baileys', '@hapi/boom', '@cacheable/node-cache',
+    'pino', 'dotenv', 'awesome-phonenumber', 'file-type', '@postfetch/core', 'p-queue',
+  ]);
+  for (const p of String(process.env.AL_JIN_LIGHT_KEEP || '').split(',').map(n => n.trim()).filter(Boolean)) {
+    if (!KEEP.has(p)) KEEP.add(p);
+  }
+  const pkgPath = path.join(dir, 'package.json');
+  let pkg;
+  try { pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')); } catch { return; }
+  const deps = pkg.dependencies || {};
+  const dropped = Object.keys(deps).filter(k => !KEEP.has(k));
+  if (!dropped.length) return;
+  const droppedDeps = {};
+  for (const k of dropped) { droppedDeps[k] = deps[k]; delete deps[k]; }
+  try { fs.copyFileSync(pkgPath, path.join(dir, 'package.json.bak')); } catch {}
+  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
+  try { fs.writeFileSync(path.join(dir, 'dropped-deps.json'), JSON.stringify(droppedDeps, null, 2)); } catch {}
+  say(yellow('light install - skipping ' + dropped.length + ' heavy packages: ' + dropped.join(', ')));
+}
+
 function installDeps(dir) {
   say(
     yellow(
       'installing dependencies…'
     )
   );
+
+  // Light mode: trim heavy deps from package.json before npm runs (kept a copy in package.json.bak)
+  if (process.argv.includes('--light') || process.env.AL_JIN_LIGHT === '1') {
+    trimDepsForLightInstall(dir);
+  }
 
   // On Windows npm is npm.cmd, which cannot be spawned without a shell
   // (plain spawnSync('npm') fails there). Use a shell command string on Windows.
