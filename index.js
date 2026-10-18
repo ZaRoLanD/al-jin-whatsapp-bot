@@ -339,11 +339,16 @@ function downloadZip(dir) {
 // unavailable until a full install. Add exceptions: AL_JIN_LIGHT_KEEP=ffmpeg-static,ytdlp-nodejs
 // Restore everything later:  mv package.json.bak package.json && npm install --omit=dev
 function trimDepsForLightInstall(dir) {
-  const KEEP = new Set([
+  // Minimal boot set: what start.js imports statically (WhatsApp + pairing core).
+  const BOOT = new Set([
     '@whiskeysockets/baileys', '@hapi/boom', '@cacheable/node-cache',
-    'pino', 'dotenv', 'awesome-phonenumber', 'file-type', '@postfetch/core', 'p-queue',
+    'pino', 'dotenv', 'awesome-phonenumber',
   ]);
-  for (const p of String(process.env.AL_JIN_LIGHT_KEEP || '').split(',').map(n => n.trim()).filter(Boolean)) {
+  // Light adds the small helpers common quick commands rely on.
+  const LIGHT = new Set([...BOOT, 'file-type', '@postfetch/core', 'p-queue']);
+  const adminMode = process.env.AL_JIN_ADMIN === '1';
+  const KEEP = adminMode ? BOOT : LIGHT;
+  for (const p of String(process.env.AL_JIN_LIGHT_KEEP || '').split(',').map(s => s.trim()).filter(Boolean)) {
     if (!KEEP.has(p)) KEEP.add(p);
   }
   const pkgPath = path.join(dir, 'package.json');
@@ -357,7 +362,7 @@ function trimDepsForLightInstall(dir) {
   try { fs.copyFileSync(pkgPath, path.join(dir, 'package.json.bak')); } catch {}
   fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
   try { fs.writeFileSync(path.join(dir, 'dropped-deps.json'), JSON.stringify(droppedDeps, null, 2)); } catch {}
-  say(yellow('light install - skipping ' + dropped.length + ' heavy packages: ' + dropped.join(', ')));
+  say(yellow((adminMode ? 'admin install' : 'light install') + ' · keeping ' + KEEP.size + ' packages, skipping ' + dropped.length + ': ' + dropped.join(', ')));
 }
 
 function installDeps(dir) {
@@ -368,7 +373,7 @@ function installDeps(dir) {
   );
 
   // Light mode: trim heavy deps from package.json before npm runs (kept a copy in package.json.bak)
-  if (process.argv.includes('--light') || process.env.AL_JIN_LIGHT === '1') {
+  if (process.argv.includes('--light') || process.env.AL_JIN_LIGHT === '1' || process.env.AL_JIN_ADMIN === '1') {
     trimDepsForLightInstall(dir);
   }
 
@@ -399,6 +404,16 @@ function installDeps(dir) {
       '✓ dependencies locked in'
     )
   );
+
+
+  // Light/admin installs: free the npm cache right after - on small panels it is
+  // the single biggest disk eater (often 100-300 MB for a ~60 MB install).
+  if (process.argv.includes('--light') || process.env.AL_JIN_LIGHT === '1' || process.env.AL_JIN_ADMIN === '1') {
+    const clean = (process.platform === 'win32'
+      ? spawnSync('npm cache clean --force', { stdio: 'ignore', timeout: 120_000, shell: true })
+      : spawnSync('npm', ['cache', 'clean', '--force'], { stdio: 'ignore', timeout: 120_000 }));
+    say(green(clean.status === 0 ? '✓ npm cache cleaned' : '⚠ npm cache clean failed (non-fatal)'));
+  }
 }
 
 const instDir = (

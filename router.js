@@ -23,6 +23,43 @@ import { onMessage as xOnMessage, resolveAlias as xResolveAlias } from './module
 import { hasExtra as xHasExtra, runExtra as xRunExtra } from './modules/x-registry.js';
 
 // ─────────────────────────────────────────────
+//  Admin-only install mode (AL_JIN_ADMIN=1, set on the panel)
+//  Keeps: group admin, ghost/anti-delete, peek, lurk, schedule,
+//  presence, owner/session management and monitor tools (.disk/.cpu…).
+//  Every other command answers "mode admin allégé" once per verb.
+//  Remove the env var (or set it to 0) to answer everything again.
+// ─────────────────────────────────────────────
+const ADMIN_MODE = process.env.AL_JIN_ADMIN === '1';
+
+const ADMIN_VERBS = new Set([
+  // core / monitoring / help
+  'ping', 'alive', 'uptime', 'restart', 'help', 'menu', 'usermanual', 'imenu',
+  'cpu', 'gpu', 'ram', 'rom', 'cpulimit', 'ramlimit', 'dlcap', 'disk',
+  'mode', 'prefix', 'replymode', 'update', 'script', 'repo', 'owner',
+  'kb', 'kbstart', 'getpp', 'getjid',
+  // ghost · peek · lurk · schedule · presence · activity
+  'ghost', 'peek', 'lurk', 'schedule', 'presence', 'activity',
+  // group admin
+  'open', 'close', 'kick', 'add', 'promote', 'demote', 'tag', 'tagall',
+  'hidetag',
+  'antilink', 'antispam', 'antisticker',
+  'pdd', 'pinchat', 'unpinchat', 'setgdesc', 'setgpp', 'welcome', 'goodbye',
+  // group admin (suite)
+  'kickall', 'kickcc',
+  'approveall', 'declineall', 'leave', 'join', 'gclone', 'revoke',
+  'gshield', 'fakereply', 'antipromote', 'antidemote', 'purge', 'antibot',
+  'warn', 'warns', 'resetwarns', 'tagallnoadmin', 'hidetagnoadmin',
+  'mute', 'unmute', 'archive', 'unarchive', 'clearchat', 'rejectcalls',
+  // owner / sessions / bot profile
+  'setpp', 'setabout', 'chatstats', 'setsession', 'addsession', 'delsession',
+  'setvar', 'getvar', 'delvar', 'addowner', 'delowner', 'ownerlist', 'setowner',
+  'privacy', 'getstatus', 'setstatus', 'getpair',
+  'block', 'unblock', 'blocklist', 'unblockall',
+]);
+
+const adminWarnedVerbs = new Set();
+
+// ─────────────────────────────────────────────
 //  Lazy loader for cold command handlers
 //
 //  Light-mode graceful degradation: if the module (or one of its
@@ -540,6 +577,18 @@ export async function dispatch(sock, update, sessionId = 'main') {
         const al = xResolveAlias(verb, rest);   // owner-defined aliases (.setcmd)
         if (al) { verb = al.verb; rest = al.args; }
       } catch {}
+
+      if (ADMIN_MODE && !ADMIN_VERBS.has(verb)) {
+        if (!adminWarnedVerbs.has(verb)) {
+          adminWarnedVerbs.add(verb);
+          try { await sock.sendMessage(chat, { text: `🚿 *Mode admin allégé*
+\`${verb}\` est coupé pour libérer le disque.
+
+Gardés : admin de groupe · ghost · peek · lurk · schedule · présence · gestion owner.
+Tout remettre : retirer _AL_JIN_ADMIN=1_ des variables de démarrage.` }, { quoted: msg }); } catch {}
+        }
+        continue;
+      }
 
       let mode = 'public';
       try { mode = await getModeLazy(); } catch { mode = 'public'; }
