@@ -23,13 +23,14 @@ import { onMessage as xOnMessage, resolveAlias as xResolveAlias } from './module
 import { hasExtra as xHasExtra, runExtra as xRunExtra } from './modules/x-registry.js';
 
 // ─────────────────────────────────────────────
-//  Admin-only install mode (AL_JIN_ADMIN=1, set on the panel)
+//  Admin-only install mode — ACTIVE BY DEFAULT (no panel setup needed)
 //  Keeps: group admin, ghost/anti-delete, peek, lurk, schedule,
 //  presence, owner/session management and monitor tools (.disk/.cpu…).
 //  Every other command answers "mode admin allégé" once per verb.
-//  Remove the env var (or set it to 0) to answer everything again.
+//  Full mode: AL_JIN_ADMIN=0 in the .env file next to index.js
+//  (the bot reads .env itself, no panel env-vars needed).
 // ─────────────────────────────────────────────
-const ADMIN_MODE = process.env.AL_JIN_ADMIN === '1';
+const ADMIN_MODE = process.env.AL_JIN_ADMIN !== '0';
 
 const ADMIN_VERBS = new Set([
   // core / monitoring / help
@@ -585,7 +586,7 @@ export async function dispatch(sock, update, sessionId = 'main') {
 \`${verb}\` est coupé pour libérer le disque.
 
 Gardés : admin de groupe · ghost · peek · lurk · schedule · présence · gestion owner.
-Tout remettre : retirer _AL_JIN_ADMIN=1_ des variables de démarrage.` }, { quoted: msg }); } catch {}
+Tout remettre : mettre _AL_JIN_ADMIN=0_ dans le fichier _.env_ à côté d'index.js.` }, { quoted: msg }); } catch {}
         }
         continue;
       }

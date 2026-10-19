@@ -346,7 +346,7 @@ function trimDepsForLightInstall(dir) {
   ]);
   // Light adds the small helpers common quick commands rely on.
   const LIGHT = new Set([...BOOT, 'file-type', '@postfetch/core', 'p-queue']);
-  const adminMode = process.env.AL_JIN_ADMIN === '1';
+  const adminMode = process.env.AL_JIN_ADMIN !== '0';
   const KEEP = adminMode ? BOOT : LIGHT;
   for (const p of String(process.env.AL_JIN_LIGHT_KEEP || '').split(',').map(s => s.trim()).filter(Boolean)) {
     if (!KEEP.has(p)) KEEP.add(p);
@@ -372,8 +372,8 @@ function installDeps(dir) {
     )
   );
 
-  // Light mode: trim heavy deps from package.json before npm runs (kept a copy in package.json.bak)
-  if (process.argv.includes('--light') || process.env.AL_JIN_LIGHT === '1' || process.env.AL_JIN_ADMIN === '1') {
+  // Trim mode: light (--light / AL_JIN_LIGHT=1) or admin (default, unless AL_JIN_ADMIN=0)
+  if (process.argv.includes('--light') || process.env.AL_JIN_LIGHT === '1' || process.env.AL_JIN_ADMIN !== '0') {
     trimDepsForLightInstall(dir);
   }
 
@@ -408,7 +408,7 @@ function installDeps(dir) {
 
   // Light/admin installs: free the npm cache right after - on small panels it is
   // the single biggest disk eater (often 100-300 MB for a ~60 MB install).
-  if (process.argv.includes('--light') || process.env.AL_JIN_LIGHT === '1' || process.env.AL_JIN_ADMIN === '1') {
+  if (process.argv.includes('--light') || process.env.AL_JIN_LIGHT === '1' || process.env.AL_JIN_ADMIN !== '0') {
     const clean = (process.platform === 'win32'
       ? spawnSync('npm cache clean --force', { stdio: 'ignore', timeout: 120_000, shell: true })
       : spawnSync('npm', ['cache', 'clean', '--force'], { stdio: 'ignore', timeout: 120_000 }));
